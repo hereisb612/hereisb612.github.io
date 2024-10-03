@@ -7,6 +7,7 @@ Using both English and Mandarin to write.
 ## Java
 
 [SpringMVC](./pages/SpringMVC.md)
+
 [MyBatis](./pages/MyBatis.md)
 
 ## Tools
