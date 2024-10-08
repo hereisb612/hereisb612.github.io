@@ -80,3 +80,11 @@ In basic jdbc, we need to create DAO interface and the implements of such interf
 6. the namespace in xml must same as the full path of the correspond interface
 
 7. the id in xml must same as the method in the interface.
+
+# 2 ways to get values from variable in MyBatis (!Important!)
+
+1. `${}` <- **字符串拼接** 存在 sql 注入，单引号需要手动拼接，like `where username = '${username}'`
+
+2. `#{}` <- **占位符赋值** recommend
+
+3. if have more than 2 formal variable, need to use `#{arg0} #{arg1}` or `#{param1} #{param2}` to visit variable.
