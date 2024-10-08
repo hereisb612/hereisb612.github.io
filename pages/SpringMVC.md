@@ -1,6 +1,6 @@
 # SpringMVC
 
-# Configurations
+## Configurations
 
 **CharacterEncodingFilter**: set encoding like UTF-8 or else
 
@@ -56,9 +56,9 @@ forceResponseEncoding: set ResponseEncoding
 
 
 
-# Scope
+## Scope
 
-## ModelAndView (Recommended)
+### ModelAndView (Recommended)
 
 > has 2 basis functions
 >
@@ -68,7 +68,7 @@ forceResponseEncoding: set ResponseEncoding
 
 
 
-### Usage
+#### Usage
 
 *functions need to return a ModelAndView object*
 
@@ -84,27 +84,27 @@ return mav; // same like return a String to thymeleaf
 
 
 
-## Model / Map / ModelMap (Optional)
+### Model / Map / ModelMap (Optional)
 
 > the split of ModelAndView
 
 
 
-### Usage
+#### Usage
 
 *Need to wirte like 'Model model' in the formla parameter and the Spring framework will inject the Model object automatically by reflection. Additionally, donnot need to return a Model object, can return view name as String as normal.*
 
 
 
-# View in SpringMVC
+## View in SpringMVC
 
-## View
+### View
 
 > handle by view templates engine configed by user in configuration files like thymeleaf.
 
 
 
-## InternalResourceView
+### InternalResourceView
 
 > Forward. One-round request.
 
@@ -114,7 +114,7 @@ return "forward:/test"
 
 
 
-## RedirectView
+### RedirectView
 
 > Re-direct. Two-round request.
 
@@ -124,7 +124,7 @@ return "redirect:/test"
 
 
 
-## View Controller
+### View Controller
 
 > if the only function(action) of a method in controller is return a view name, such as `public String index(){return index;}`, can replace this function in springXML.xml as `<mvc:view-controller path="/" view-name="index"/>`. More simple and readable.
 
@@ -136,7 +136,7 @@ return "redirect:/test"
 
 
 
-# Restful
+## Restful
 
 - get means select
 - post means insert into
@@ -145,7 +145,7 @@ return "redirect:/test"
 
 
 
-# HttpMessageConverter
+## HttpMessageConverter
 
 > provides 2 annotations and 2 class
 >
@@ -155,7 +155,7 @@ return "redirect:/test"
 
 
 
-## @RequestBody
+### @RequestBody
 
 can use this annotation at formal variable place, and then the data in this request will be convert to a java object automatically. Like:
 
@@ -173,7 +173,7 @@ public String RequestBodyTest(@RequestBody String body) {
 
 
 
-## RequestEntity
+### RequestEntity
 
 this Java class can convert all the request, and also have methods to get headers or other informations.
 
@@ -188,7 +188,7 @@ public String RequestEntityTest(RequestEntity<String> body) {
 
 
 
-## @ResponseBody
+### @ResponseBody
 
 this annotation can set data in Return as the data in response body.
 

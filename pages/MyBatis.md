@@ -1,13 +1,13 @@
 # MyBatis
 
-# dependencies
+## dependencies
 
 1. mysql-connector-j
 2. mybatis
 3. junit (optional)
 4. lombok (optional)
 
-# configurations
+## configurations
 
 Can be finded from [MyBatis Documentation](https://mybatis.org/mybatis-3/getting-started.html)
 
@@ -54,11 +54,11 @@ password=******
 
 **need to regist the mapping files in the config file by using mapper label**
 
-# Mapper interface
+## Mapper interface
 
 In basic jdbc, we need to create DAO interface and the implements of such interface to access to database, but in MyBatis, the mapper interface can be seem as the combaination of those two class because MyBatis supports to **Interface oriented programming**, so we dont need to create the object of interface, and thats the reason why we dont need to write class to achive interface. It is more easier to code.
 
-# Files structure
+## Files structure
 
 - java
     - pojo
@@ -67,7 +67,7 @@ In basic jdbc, we need to create DAO interface and the implements of such interf
         - UserMapper (Interface)
 - test
 
-# Mapping File
+## Mapping File
 
 1. make sure the file's name is same as table. For example, t_user vs UserMapper.
 
@@ -83,7 +83,7 @@ In basic jdbc, we need to create DAO interface and the implements of such interf
 
 7. the id in xml must same as the method in the interface.
 
-# 2 ways to get values from variable in MyBatis (!Important!)
+## 2 ways to get values from variable in MyBatis (!Important!)
 
 1. `${}` <- **字符串拼接** 存在 sql 注入，单引号需要手动拼接，like `where username = '${username}'`
 

@@ -1,6 +1,6 @@
 # GIT
 
-# git init
+## git init
 
 > can change a normal directory into a git repository.
 
@@ -14,7 +14,7 @@
 
 
 
-# git clone HTTPS-links
+## git clone HTTPS-links
 
 > clone a repository from somewhere
 
@@ -22,7 +22,7 @@ In contrast to ```git init``` , use this command to download can create a git re
 
 
 
-# Commit
+## Commit
 
 Look how to do it in the [Github Docs](https://docs.github.com/en/repositories/working-with-files/managing-files/adding-a-file-to-a-repository#adding-a-file-to-a-repository-using-the-command-line).
 
