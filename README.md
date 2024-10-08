@@ -1,8 +1,6 @@
-# Coding Learning
+# Ethan's Blog
 
-Here are all the things about my learning.
-
-Using both English and Mandarin to write.
+Here are all the things about myself. Using both English and Mandarin to write.
 
 ## Java
 

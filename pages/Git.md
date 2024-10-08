@@ -1,3 +1,5 @@
+# GIT
+
 # git init
 
 > can change a normal directory into a git repository.
