@@ -87,4 +87,17 @@ In basic jdbc, we need to create DAO interface and the implements of such interf
 
 2. `#{}` <- **占位符赋值** recommend
 
-3. if have more than 2 formal variable, need to use `#{arg0} #{arg1}` or `#{param1} #{param2}` to visit variable.
+3. if have more than 2 formal variable, MyBatis will put those formal variable into a map automatically, which means need to use default key like `#{arg0} #{arg1}` or `#{param1} #{param2}` to visit values.
+
+*You can also create map by yourself to set keys' name.* Like:
+
+```
+map = new HashMap();
+map.put("username", root);
+map.put("password", root);
+mapper.select(map);
+
+select * from table where username = #{username}
+```
+
+4. if inputing a pojo like `User user`, can also use `#{}` to access object's values.
