@@ -152,3 +152,130 @@ select * from table where username = #{username}
 `<column>` : from database
 
 use `<resultMap>` can match pojo & select even if the name is different.
+
+## 多对一
+
+> 对一对应对象，对多对应方法
+
+为多的一方设置一的属性
+
+- 级连
+- association
+- 分步查询
+
+### 级连
+
+for example:
+
+```
+class Emp:
+    private Dept dept; // every employee belongs different department. N : 1
+```
+
+```
+    <!--    Emp findAllInfoById(Integer id);-->
+    <resultMap id="empAllInfoMap" type="Emp">
+        <id property="eid" column="eid"/>
+        <result property="empName" column="emp_name"/>
+        <result property="age" column="age"/>
+        <result property="sex" column="sex"/>
+        <result property="email" column="email"/>
+        <result property="did" column="did"/>
+        <result property="dept.did" column="did"/>
+        <result property="dept.deptName" column="dept_name"/>
+    </resultMap>
+
+    <select id="findAllInfoById" resultMap="empAllInfoMap">
+        select *
+        from t_emp left join t_dept
+        on t_emp.did = t_dept.did
+        where eid = #{eid}
+    </select>
+```
+
+### association
+
+*OR can use `<association>` to replace `dept.xx`, it is more concise*
+
+### 分步查询
+
+```
+17:52:13.539 [main] DEBUG com.forty2.mybatis.mapper.EmpMapper.getAllInfoStepOne -- ==>  Preparing: select * from t_emp where eid = ?
+17:52:13.554 [main] DEBUG com.forty2.mybatis.mapper.EmpMapper.getAllInfoStepOne -- ==> Parameters: 2(Integer)
+17:52:13.575 [main] DEBUG com.forty2.mybatis.mapper.DeptMapper.getAllInfoStepTwo -- ====>  Preparing: select * from t_dept where did = ?
+17:52:13.575 [main] DEBUG com.forty2.mybatis.mapper.DeptMapper.getAllInfoStepTwo -- ====> Parameters: 2(Integer)
+17:52:13.576 [main] DEBUG com.forty2.mybatis.mapper.DeptMapper.getAllInfoStepTwo -- <====      Total: 1
+17:52:13.577 [main] DEBUG com.forty2.mybatis.mapper.EmpMapper.getAllInfoStepOne -- <==      Total: 1
+```
+
+have selectOne & selectTwo. Use `association` to call selectTwo after selectOne was operated. ** !key point is `association`! **
+
+```
+<!--    Emp getAllInfoStepOne(Integer eid);-->
+
+    <resultMap id="empAllInfoStep1" type="Emp">
+        <id property="eid" column="eid"/>
+        <result property="empName" column="emp_name"/>
+        <result property="age" column="age"/>
+        <result property="sex" column="sex"/>
+        <result property="email" column="email"/>
+        <result property="did" column="did"/>
+
+        <association property="dept"
+                     select="com.forty2.mybatis.mapper.DeptMapper.getAllInfoStepTwo"
+                     column="did"/>
+    </resultMap>
+
+    <select id="getAllInfoStepOne" resultMap="empAllInfoStep1">
+        select * from t_emp where eid = #{eid}
+    </select>
+```
+
+Select label should use the unique name. 唯一标识？全类名。
+
+#### 分布查询：延迟加载（懒加载）
+
+如 emp 有 empID 和 Dept dept。
+
+开启延迟加载后，如访问 empID 则直接查询，不需要进行第二步查询来查询 Dept 信息；等访问 Dept 信息时再查询 Dept。
+
+默认关闭，需要在 mybatis-config 中打开。
+
+```
+<settings>
+  <lazyLoadingEnabled> & <aggressiveLazyLoding>
+</settings>
+```
+
+can be found in Documentations.
+
+lazyLoadingEnabled: 延迟加载的全局开关，默认关闭
+aggressiveLazyLoding: 默认开启，开启时无论调用什么方法都会加载所有属性，which means 只查询 empID 也会加载 dept，使得延迟加载失效
+
+** so which means if wanna enable this function, need to change these two options simultaneously.**
+
+## 一对多
+
+> 对一对应对象，对多对应方法
+
+通过 `<collection>` 解决。ofType 用来声明集合内的 object 的属性。而后手写映射即可。
+
+```
+<!--    Dept getDeptAndEmp(@Param("did") Integer did);-->
+    <resultMap id="deptAndEmpResultMap" type="Dept">
+        <id property="did" column="did"/>
+        <result property="deptName" column="dept_name"/>
+        <collection property="emps" ofType="Emp">
+            <id property="eid" column="eid"/>
+            <result property="empName" column="emp_name"/>
+            <result property="age" column="age"/>
+            <result property="sex" column="sex"/>
+            <result property="email" column="email"/>
+            <result property="did" column="did"/>
+        </collection>
+    </resultMap>
+
+    <select id="getDeptAndEmp" resultMap="deptAndEmpResultMap">
+        select * from t_dept left join t_emp on t_dept.did = t_emp.did where t_dept.did = #{did}
+    </select>
+```
