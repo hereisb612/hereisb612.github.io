@@ -258,7 +258,10 @@ aggressiveLazyLoding: 默认开启，开启时无论调用什么方法都会加�
 
 > 对一对应对象，对多对应方法
 
-通过 `<collection>` 解决。ofType 用来声明集合内的 object 的属性。而后手写映射即可。
+通过 `<collection>` 解决。
+1. ofType 用来声明集合内的 object 的属性。而后手写映射即可。如下代码示。
+2. 也可以如上分布查询一样，在 collection 内用 property select column 来完成一个分布查询。
+
 
 ```
 <!--    Dept getDeptAndEmp(@Param("did") Integer did);-->
@@ -277,5 +280,90 @@ aggressiveLazyLoding: 默认开启，开启时无论调用什么方法都会加�
 
     <select id="getDeptAndEmp" resultMap="deptAndEmpResultMap">
         select * from t_dept left join t_emp on t_dept.did = t_emp.did where t_dept.did = #{did}
+    </select>
+```
+
+## 动态 SQL [Documentations](https://mybatis.org/mybatis-3/dynamic-sql.html)
+
+provided by Mybatis. 是一种动态拼接字符串的技术，来解决字符串拼接操作的痛点。
+
+### if
+
+```
+<!--    List<Emp> getEmpByCondition(Emp emp);-->
+    <select id="getEmpByCondition" resultType="Emp">
+        select * from t_emp where 1=1
+        <if test="eid != null and eid != ''">
+            and eid = #{eid}
+        </if>
+        <if test="empName != null and empName != ''">
+            and emp_name = #{empName}
+        </if>
+        <if test="age != null and age != ''">
+            and age = #{age}
+        </if>
+    </select>
+```
+
+不符合 test 条件的 if 不会被拼接进 sql 语句里
+
+for example like if set age = null, preparedSql is like `Preparing: select * from t_emp where 1=1 and eid = ? and emp_name = ?`, `and age = #{age}` wont be concat to the whole sql statement.
+
+> the reason why `where 1=1` 
+
+but there are a simple question, if the first `if` unmet the test field, it will disappear, but the following statement are all starting with `and`. The way to fix it is, using a 1=1 statement after where, make all the if statement start with `and`.
+
+### where
+
+can also use `<where></where>` to surround `<if>`
+
+```
+<!--    List<Emp> getEmpByCondition(Emp emp);-->
+    <select id="getEmpByCondition" resultType="Emp">
+        select * from t_emp
+        <where>
+        <if test="eid != null and eid != ''">
+            and eid = #{eid}
+        </if>
+        <if test="empName != null and empName != ''">
+            and emp_name = #{empName}
+        </if>
+        <if test="age != null and age != ''">
+            and age = #{age}
+        </if>
+        <where>
+    </select>
+
+    where 同时能自动去掉前面多余的 and & or，但后面的不能自动去除 like `eid = #{eid} and`
+```
+
+### trim 
+
+have 4 fields:
+    - suffix|prefix: 在 trim 标签中的内容的前面或后面加上指定内容
+    - suffixOverrides|prefixOverrides: 在 trim 标签中的内容的前面或后面去掉指定内容
+
+### choose..when..otherwise
+
+> same as if.. / else if.. / else
+> in my view i think it is more likely switch case but automatically added break on each lazyLoadingEnabled
+
+### for each
+
+collection: identify List or Set needed to be used
+item: types of collection
+separator: used to separate, often `,`
+open: after where
+close: ending
+
+### sql 片段
+
+> a simple way to insert fields
+
+```
+    <sql id="demo">eid, ename</sql>
+
+    <select>
+        select <include id="demo"> from t_emp
     </select>
 ```
