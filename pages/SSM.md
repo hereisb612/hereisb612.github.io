@@ -25,17 +25,9 @@ DI：Dependency Injection 依赖注入
 
 
 
-## Spring01IocApplication.java
+## 主程序类、主入口类
 
 ```java
-package com.forty2.training.spring.ioc;
-
-import com.forty2.training.spring.ioc.pojo.Person;
-import org.springframework.boot.SpringApplication;
-import org.springframework.boot.autoconfigure.SpringBootApplication;
-import org.springframework.context.ConfigurableApplicationContext;
-import org.springframework.context.annotation.Bean;
-
 /**
  * 主入口类、主程序类：
  * run spring application and return a ConfigurableApplicationContext,
@@ -103,12 +95,14 @@ public class example {
 
 
 
-## 组件的四大特性
+## 组件特性
 
 - 名字、类型、对象、作用域
 - 组件名要求全局唯一
   - 在使用 `@Bean("name")`  方式注册组件时，注解的重名不会被编译器检查到，在代码级别是可以显示为给两个组件注册了同样的名字的
   - 但在实际的 Spring 执行过程中，只有先声明的组件会成功注册进容器
+- 容器启动过程中就会创建组件对象
+- 组件是**单实例的**
 
 
 
@@ -143,4 +137,39 @@ beansOfType.forEach((k, v) -> {
 
 
 
-## 
+## MVC 分层模型对应注解
+
+- @Configuration
+- @Controller
+- @Service
+- @Repository
+- @Component
+
+
+
+## Configuration
+
+- 组件：框架的底层配置
+  - 配置文件：指定配置的文件
+  - **配置类**：用于指定配置的类，可以将配置分类管理
+- 配置类的实现方式
+  1. new config directory
+  2. new configClass and use @Configuration to declare it
+  3. then move things like components into this ConfigClass to register them
+
+```java
+@Configuration
+public class PersonConfig {
+    @Bean("example")
+    public Person person() {
+        Person p = new Person();
+        p.setName("Ethan");
+        p.setAge(23);
+        p.setGender("Male");
+        return p;
+    }
+}
+```
+
+*ConfigClass is also a component placed in the container.*
+
