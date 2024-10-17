@@ -23,7 +23,9 @@ DI：Dependency Injection 依赖注入
 1. create a parent project, and make it packing to pom
 2. create new model by using SpringBoot option
 
-### Spring01IocApplication.java
+
+
+## Spring01IocApplication.java
 
 ```java
 package com.forty2.training.spring.ioc;
@@ -45,21 +47,31 @@ public class Spring01IocApplication {
 
     public static void main(String[] args) {
 
-        // ApplicationContext: spring 的应用上下文，即 spring 的容器
+        // 1. ApplicationContext: spring 的应用上下文，即 spring 的容器
         ConfigurableApplicationContext ioc = SpringApplication.run(Spring01IocApplication.class, args);
         System.out.println("ioc is: " + ioc);
 
-        // 获取容器中所有组件的名字，可验证容器中有哪些组件
+        // 2. 获取容器中所有组件的名字，可验证容器中有哪些组件
         String[] beanDefinitionNames = ioc.getBeanDefinitionNames();
         for (String name : beanDefinitionNames) {
             System.out.println("name = " + name);
         }
     }
-  
+```
 
-    // one way to register bean into ioc container
-    // 给容器中注册一个自己的组件，组件名就是方法名
-  	// important! 此处的并不是 Person 的构造方法，只是一个普通的方法名，所以不会造成递归或循环调用的问题
+
+
+## 注册组件的方式
+
+``````java
+@SpringBootApplication
+public class example {
+
+    public static void main(String[] args) {
+        ...
+    }
+  
+    // important! 此处的并不是 Person 的构造方法，只是一个普通的方法名，所以不会造成递归或循环调用的问题
     @Bean
     public Person person() {
         Person p = new Person();
@@ -69,5 +81,66 @@ public class Spring01IocApplication {
         return p;
     }
 }
+``````
 
+
+
+## 组件的命名规则
+
+- if do not set bean's name mannually, methods' name is bean's name. Like in above code, the bean's name is person in default.
+- The way to set bean's name is that key in name in `@Bean(name)`, for example:
+
+``````java
+    @Bean("example_name")
+    public Person person() {
+        Person p = new Person();
+        p.setName("Ethan");
+        p.setAge(23);
+        p.setGender("Male");
+        return p;
+    }
+``````
+
+
+
+## 组件的四大特性
+
+- 名字、类型、对象、作用域
+- 组件名要求全局唯一
+  - 在使用 `@Bean("name")`  方式注册组件时，注解的重名不会被编译器检查到，在代码级别是可以显示为给两个组件注册了同样的名字的
+  - 但在实际的 Spring 执行过程中，只有先声明的组件会成功注册进容器
+
+
+
+## 获取组件的方式
+
+#### 通过组件的名字获取
+
+``````java
+Person example = (Person) ioc.getBean("example");
+``````
+
+#### 通过组件的类型获取
+
+```java
+Person bean = ioc.getBean(Person.class);
 ```
+
+#### 通过组件的名字及类型获取
+
+```java
+Person person = ioc.getBean("example", Person.class);
+```
+
+#### 通过组件类型，获取到该类型的所有组件
+
+```java
+Map<String, Person> beansOfType = ioc.getBeansOfType(Person.class);
+beansOfType.forEach((k, v) -> {
+    System.out.println(v);
+});
+```
+
+
+
+## 
