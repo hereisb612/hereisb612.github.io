@@ -151,7 +151,7 @@ beansOfType.forEach((k, v) -> {
 
 - 组件：框架的底层配置
   - 配置文件：指定配置的文件
-  - **配置类**：用于指定配置的类，可以将配置分类管理
+  - **配置类**：分类管理组件的配置，配置类也是容器中的一种组件
 - 配置类的实现方式
   1. new config directory
   2. new configClass and use @Configuration to declare it
