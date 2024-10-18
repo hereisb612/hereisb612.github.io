@@ -177,13 +177,15 @@ public class PersonConfig {
 
 ## @bean in ConfigurationClass VS @Component
 
-- 使用 `@Configuration` 修饰的类为配置类，其中通常包含多个通过 `@bean` 所注册的方法，称为工厂方法。
-  -  `@bean` 方法可以分类放在对应的配置类中，也可以定义在主入口类中
+- 使用 `@Configuration` 修饰的类是配置类，通常包含通过 `@Bean` 注解注册的方法，称为工厂方法。
+  - Spring 会**保证**当配置类中的 `@Bean` 方法被多次调用时，返回的是**同一个对象**，这体现了 Spring 的单例哲学。
+  - Spring 会为 `@Configuration` 类生成 CGLIB 代理，**确保** `@Bean` 方法的返回值是**单例**。
 
-- 配置类的奥义是：Spring 会保证**在多次调用 `@bean` 工厂方法时**，返回的始终是**同一个对象**，不会创建新的对象。以此来贯彻 Spring 的单例哲学。
-- 相反，多次调用 `@Component` 修饰的类中的方法是，则会**创建多个对象**。
-
-
+- `@Component` 类在**默认**情况下（单例模式）也是**单例**的。Spring 容器在启动时会自动装配这些组件，并在需要时返回**相同的实例**。
+  
+  - 只有在设置为 `prototype` 作用域时，每次调用 `@Component` 的方法才会创建新的对象。
+  
+  
 
 ## @ComponentScan
 
@@ -195,4 +197,46 @@ public class PersonConfig {
 
 
 
-## 
+## 第三方组件导入容器
+
+> 因为第三方组件的源码通常无法修改，所以无法通过标记分层注解的方式来导入容器
+>
+> 故可用：
+
+1. 使用配置类，在配置类中写好工厂方法，手动加入容器中，like:
+
+```java
+@Configuration
+public class ExampleConfig{
+  @Bean
+  public A a(){
+    return new A();
+  }
+}
+```
+
+2. 在主入口类或容器中任何一个组件上使用 `@Import(Example.class)` 注解，来导入组件，仅需导入一次
+3. 更推荐使用一个单独的配置类，如 `AppConfig` 来管理与整个程序相关的注解
+
+
+
+## @Scope
+
+>  用于调整组件的作用域，默认是 `@Scope("singleton")` 单实例
+
+
+
+1.  @Scope("prototype")，调整组件为 非单实例
+2.  @Scope("singleton")，调整组件为 单实例
+3.  @Scope("request")，调整组件为 同一个请求单实例
+4.  @Scope("session")，调整组件为 同一次会话单实例
+
+
+
+容器创建的过程中，就把所有单实例的组件创建完成并加入容器
+
+当组件设置为非单实例（多例）时，容器启动时不会创建非单实例组件的对象，相反，什么时候获取什么时候创建
+
+
+
+## @Lazy
