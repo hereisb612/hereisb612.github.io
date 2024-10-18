@@ -139,11 +139,11 @@ beansOfType.forEach((k, v) -> {
 
 ## MVC 分层模型对应注解
 
-- @Configuration
-- @Controller
-- @Service
-- @Repository
-- @Component
+- @Configuration for Configuration Class
+- @Controller for Controller Class
+- @Service for Service Class
+- @Repository for DAO Class
+- @Component for Other Classes
 
 
 
@@ -173,3 +173,26 @@ public class PersonConfig {
 
 *ConfigClass is also a component placed in the container.*
 
+
+
+## @bean in ConfigurationClass VS @Component
+
+- 使用 `@Configuration` 修饰的类为配置类，其中通常包含多个通过 `@bean` 所注册的方法，称为工厂方法。
+  -  `@bean` 方法可以分类放在对应的配置类中，也可以定义在主入口类中
+
+- 配置类的奥义是：Spring 会保证**在多次调用 `@bean` 工厂方法时**，返回的始终是**同一个对象**，不会创建新的对象。以此来贯彻 Spring 的单例哲学。
+- 相反，多次调用 `@Component` 修饰的类中的方法是，则会**创建多个对象**。
+
+
+
+## @ComponentScan
+
+默认情况下，分层注解能起作用的前提是，这些组件必须在主程序所在的包 及其子包结构下
+
+如果想要扫描其它包下的组件，则需要在主入口类使用 `@ComponentScan(basePackages = "..")` 注解，在主入口类声明组件扫描的范围。一般声明到稍大一级的范围，以开启组件的批量扫描
+
+但更建议按照规范编程，将 Controller 等包规范放在和主程序类平级的位置
+
+
+
+## 
