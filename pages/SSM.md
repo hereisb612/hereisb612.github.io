@@ -2,6 +2,8 @@
 
 ## 容器
 
+### 容器 - 组件注册
+
 组件：具有一定功能的对象
 
 容器：管理组件（创建、获取、保存、销毁）
@@ -18,14 +20,14 @@ DI：Dependency Injection 依赖注入
 
 
 
-## Basic Spring Environment Creating In Idea
+#### Basic Spring Environment Creating In Idea
 
 1. create a parent project, and make it packing to pom
 2. create new model by using SpringBoot option
 
 
 
-## 主程序类、主入口类
+#### 主程序类、主入口类
 
 ```java
 /**
@@ -53,7 +55,7 @@ public class Spring01IocApplication {
 
 
 
-## 注册组件的方式
+#### 注册组件的方式
 
 ``````java
 @SpringBootApplication
@@ -77,7 +79,7 @@ public class example {
 
 
 
-## 组件的命名规则
+#### 组件的命名规则
 
 - if do not set bean's name mannually, methods' name is bean's name. Like in above code, the bean's name is person in default.
 - The way to set bean's name is that key in name in `@Bean(name)`, for example:
@@ -95,7 +97,7 @@ public class example {
 
 
 
-## 组件特性
+#### 组件特性
 
 - 名字、类型、对象、作用域
 - 组件名要求全局唯一
@@ -106,27 +108,27 @@ public class example {
 
 
 
-## 获取组件的方式
+#### 获取组件的方式
 
-#### 通过组件的名字获取
+##### 通过组件的名字获取
 
 ``````java
 Person example = (Person) ioc.getBean("example");
 ``````
 
-#### 通过组件的类型获取
+##### 通过组件的类型获取
 
 ```java
 Person bean = ioc.getBean(Person.class);
 ```
 
-#### 通过组件的名字及类型获取
+##### 通过组件的名字及类型获取
 
 ```java
 Person person = ioc.getBean("example", Person.class);
 ```
 
-#### 通过组件类型，获取到该类型的所有组件
+##### 通过组件类型，获取到该类型的所有组件
 
 ```java
 Map<String, Person> beansOfType = ioc.getBeansOfType(Person.class);
@@ -137,7 +139,7 @@ beansOfType.forEach((k, v) -> {
 
 
 
-## MVC 分层模型对应注解
+#### MVC 分层模型对应注解
 
 - @Configuration for Configuration Class
 - @Controller for Controller Class
@@ -147,7 +149,7 @@ beansOfType.forEach((k, v) -> {
 
 
 
-## Configuration
+#### Configuration
 
 - 组件：框架的底层配置
   - 配置文件：指定配置的文件
@@ -175,7 +177,7 @@ public class PersonConfig {
 
 
 
-## @bean in ConfigurationClass VS @Component
+#### @bean in ConfigurationClass VS @Component
 
 - 使用 `@Configuration` 修饰的类是配置类，通常包含通过 `@Bean` 注解注册的方法，称为工厂方法。
   - Spring 会**保证**当配置类中的 `@Bean` 方法被多次调用时，返回的是**同一个对象**，这体现了 Spring 的单例哲学。
@@ -187,7 +189,7 @@ public class PersonConfig {
   
   
 
-## @ComponentScan
+#### @ComponentScan
 
 默认情况下，分层注解能起作用的前提是，这些组件必须在主程序所在的包 及其子包结构下
 
@@ -197,7 +199,7 @@ public class PersonConfig {
 
 
 
-## 第三方组件导入容器
+#### 第三方组件导入容器
 
 > 因为第三方组件的源码通常无法修改，所以无法通过标记分层注解的方式来导入容器
 >
@@ -220,7 +222,7 @@ public class ExampleConfig{
 
 
 
-## @Scope
+#### @Scope
 
 >  用于调整组件的作用域，默认是 `@Scope("singleton")` 单实例
 
@@ -239,13 +241,13 @@ public class ExampleConfig{
 
 
 
-## @Lazy
+#### @Lazy
 
 > 用于 `@Scope("singleton")` 时，因为单实例时，所有组件是在容器初始化时创建好的，所以对于有懒加载需求的组件，可以使用 `@Lazy` 来设置。
 
 
 
-## @FactoryBean<>
+#### @FactoryBean<>
 
 > 如果制造某些对象的过程比较复杂，不是用注解可以直接搞定的，则可以使用 FactoryBean，在 getObject() 中写复杂逻辑
 
@@ -274,6 +276,164 @@ public class ExampleConfig{
     
     // make it return true & Singleton by default.
     ```
+
+
+
+#### @Conditional
+
+> 此注解可以令组件在满足某些条件时才被创建并加载进容器
+
+1. condition 是个接口，应当有一个类实现 Condition 接口，并在该接口的方法内进行条件的判断
+2. Conditional 内的参数为实现了接口的 `ExampleCondition.class`
+3. `ioc.getEnvironment()` 可以获得有关于环境变量的集合
+4. 环境变量可以在 Run/Debug Configuration 中的 Environment variables 中手动设定，如 `os=mac`
+5. 如没有环境变量的设置栏，可以 Run/Debug Configuration - Build And Run - Modify Options 中添加
+6. `@Conditional` can be used for both Class and Method. If both Class and Method have `@Conditional`, the annotation on class is priorer than methods.
+
+
+
+#### Conditional 派生注解
+
+有一系列派生注解可以使用
+
+使用派生注解可以免去手写 ExampleCondition 类并手动实现 Condition-matches 方法的过程
+
+
+
+---
+
+
+
+### 容器 - 注入
+
+#### @Autowired
+
+> 自动装配。
+>
+> 原理是 Spring 调用容器的 getBean() 获得符合条件的组件，自动装配。
+
+
+
+自动装配流程：
+
+1. 按照类型找
+   1. 有且只有一个组件，则注入，不考虑组件名
+   2. 找到多个组件，则按照组件名继续匹配
+      1. 如果找到同名组件，直接注入
+      2. 如果找不到同名组件，则报错
+
+
+
+@Autowired 的适用方式
+
+```java
+@Autowired
+Person bill; // 注入一个
+
+@Autowired
+List<Person> people; // 注入查询到的多个
+
+@Autowired
+Map<String, Person> peopleMap; // 使用 Map，注入查询到的多个。Key 为组件名，Value 为组件
+
+@Autowired
+ApplicationContext ioc; // 注入 ioc 容器本体
+```
+
+
+
+#### @Qualify & @Primary
+
+> **Error**: Field person in UserService required a single bean, but 3 were found.
+>
+>  **Solution**: Consider marking one of the beans as `@Primary`, updating the consumer to accept multiple beans, or using `@Qualifier ` to identify the bean that should be consumed
+
+
+
+当使用 `@Autowired` 查询到多个组件导致无法自动注入时，可以使用 `@Qualify(Component's name)` 精确指定需要注入的组件
+
+亦可以在组件上使用 `@Primary` 标记为默认组件。当使用 `@Autowired` 查询到多个组件导致无法自动注入时，若这些组件中某一个被标注为 `@Primary` 则自动注入该组件。
+
+**important**：同类型组件有多个，且使用 `@Primary` 标记了一个默认组件后，自动注入的将一直是该默认组件，**不再根据组件名进行匹配**。若需要注入非默认组件，可以使用 `@Qualify` 进行声明。
+
+
+
+#### @Resource
+
+> import jakarta.annotation.Resource;
+>
+> jakarta 前身是 JavaX，是 JavaEE 的标准组织，具有更强的通用性
+
+
+
+@Resource 也能实现自动注入，其与 @Autowired 的最大区别是，一个是 Java 标准下的，一个是 Spring 下的。这意味着所有具有容器功能的接口都支持 @Resource，然而 @Autowired 只有 Spring 下的框架支持。
+
+
+
+@Autowired(required = false) 允许组件不存在时，令需要注入的属性为空，但 @Resource 没有类似的操作。
+
+
+
+#### 构造器注入
+
+```java
+@Repository
+@Data
+@ToString
+public class UserDao {
+
+    Person person;
+
+    @Autowired
+    public UserDao(Person person){
+        this.person = person;
+    }
+}
+```
+
+可以使用 @Autowired 对 **构造器的形参** 进行自动注入。
+
+**Very Recommend**。因为使用构造器注入，即使脱离了 Spring 环境手动 new 对象，依旧可以在 new 的时候手动为形参传参。而使用 @Autowired 在属性上时，则无法在手动创建对象时为属性赋值。
+
+
+
+#### Setter 方法注入
+
+```java
+  @Autowired
+  public void setPerson(Person person) {
+      this.person = person;
+  }
+```
+
+可以使用 @Autowired 对 **setter方法的形参** 进行自动注入。
+
+
+
+在 JavaBean 规范中，属性通常由 `getX()` 和 `setX()` 方法定义，而不一定与类中的某个具体变量名直接关联。Spring 在创建对象的过程中，如果发现某类型有对应的 `get/set` 方法，则会将该方法对应的变量视为属性，并自动调用 `set` 方法进行依赖注入。
+
+
+
+```java
+@Repository
+@Data
+@ToString
+public class UserDao {
+
+    Person dog;
+
+    @Autowired
+    public void setPerson(Person person) {
+        this.dog = person;
+    }
+}
+```
+
+此代码依旧能完成 Person dog 属性的注入，因为 @Autowired 实际注入的是形参位置的 Person.class，再通过 Person.class 朝 this.dog 赋值。所以 person 和 dog 即使不重名也能完成注入。
+
+
+
+
 
 
 
