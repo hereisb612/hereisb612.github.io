@@ -11,10 +11,12 @@
 > 控制反转是一种思想，而依赖注入是 Spring 实现这种思想的方式
 
 IOC：Inversion of control 控制反转
+
 - 控制：资源的控制权（资源的创建、获取、销毁等）
 - 反转：从 Programmer 控制转交给 Spring
 
 DI：Dependency Injection 依赖注入
+
 - 依赖：组件之间的依赖关系，如 News Controller 依赖于 NewsServices
 - 注入：通过 setter、构造器等方式自动注入（赋值）
 
@@ -180,13 +182,14 @@ public class PersonConfig {
 #### @bean in ConfigurationClass VS @Component
 
 - 使用 `@Configuration` 修饰的类是配置类，通常包含通过 `@Bean` 注解注册的方法，称为工厂方法。
+
   - Spring 会**保证**当配置类中的 `@Bean` 方法被多次调用时，返回的是**同一个对象**，这体现了 Spring 的单例哲学。
   - Spring 会为 `@Configuration` 类生成 CGLIB 代理，**确保** `@Bean` 方法的返回值是**单例**。
 
 - `@Component` 类在**默认**情况下（单例模式）也是**单例**的。Spring 容器在启动时会自动装配这些组件，并在需要时返回**相同的实例**。
-  
+
   - 只有在设置为 `prototype` 作用域时，每次调用 `@Component` 的方法才会创建新的对象。
-  
+
   
 
 #### @ComponentScan
@@ -433,7 +436,108 @@ public class UserDao {
 
 
 
+#### xxxAware 感知接口
+
+> Aware 接口下有一系列子接口，用于一系列内容。可以通过这些感知接口自带的 set 方法获取内容给属性。
+>
+> 感知接口自带的 set 方法无需 @Autowired，Spring 就会自动注入这些方法的形参，将想要感知的内容传送来。
+
+```java
+@Service
+public class xxAwareService implements EnvironmentAware{
+    Environment environment;
+
+    @Override
+    public void setEnvironment(Environment environment) {
+        this.environment = environment;
+    }
+
+    public String typeOfEnvironment(){
+        return environment.getProperty("spring.application.name");
+    }
+}
+```
+
+
+
+#### @Value
+
+@Autowired 是用来自动注入**组件**的，但一些基本数据类型，如 `String name` 是无法通过 @Autowired 完成注入的。
+
+如果想给基本数据类型完成注入，则需要使用 @Value，如：
+
+1. 直接用字面量给属性赋值
+
+   ```java
+   @Value("name")
+   private String name;
+   ```
+
+2. 从配置文件中动态取出某一项的值
+
+   ```java
+   @Value("${dog.age}")
+   private int age;
+   ```
+
+   配置文件（如 application.properties）
+
+   ```properties
+   dog.age=7
+   ```
+
+3. 在 `@Value("#{SpEL}")` 中写 SpEL (Spring Expression Language) Spring 表达式语言
+
+   ```java
+   @Value("#{10*${dog.age}}")
+   private String color;
+   ```
+
+   赋 uuid 的场景：
+
+   ```java
+   @Value("#{T(java.util.UUID).randomUUID().toString()}") 
+   private String uuid;
+   ```
+
+   此处的 T(type) 是 SpEL 的语法，用来表示 Java.lang.Class 类的实例，可以视作 Java 中直接写类名。
+
+   只有 Java.lang 下的类可以省略包名。
+
+   此写法一般用于引用常量及静态方法（因其可直接被类名调用）[^1]
 
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+## 引用
+
+遵循 CC 4.0 BY-SA 版权协议，转载请附上原文出处链接和本声明。
+
+[^1]: https://blog.csdn.net/ZBZBZB12138/article/details/122597702
