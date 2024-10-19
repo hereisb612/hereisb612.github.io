@@ -240,3 +240,40 @@ public class ExampleConfig{
 
 
 ## @Lazy
+
+> 用于 `@Scope("singleton")` 时，因为单实例时，所有组件是在容器初始化时创建好的，所以对于有懒加载需求的组件，可以使用 `@Lazy` 来设置。
+
+
+
+## @FactoryBean<>
+
+> 如果制造某些对象的过程比较复杂，不是用注解可以直接搞定的，则可以使用 FactoryBean，在 getObject() 中写复杂逻辑
+
+
+
+- FactoryBean<> is a interface, and which class implements this interface, which class converts to a bean factory automatically.
+
+- the class who implements FactoryBean<> need to be added `@Component` annotation to be putted into container.
+
+- This interface has 3 methods need to override.
+
+  - ```java
+    public Car getObject() throws Exception {}
+    
+    // factory will use this method to create object and put it into container automatically.
+    ```
+
+  - ```java
+    public Class<?> getObjectType() {}
+    
+    // use this method to return the type of object for 多态
+    ```
+
+  - ```java
+    public boolean isSingleton() {}
+    
+    // make it return true & Singleton by default.
+    ```
+
+
+
