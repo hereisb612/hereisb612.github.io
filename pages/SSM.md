@@ -486,6 +486,13 @@ public class xxAwareService implements EnvironmentAware{
    dog.age=7
    ```
 
+   亦可以设置取不到时的默认值
+
+   ```java
+   @Value("${dog.age:20}")
+   private int age;
+   ```
+
 3. 在 `@Value("#{SpEL}")` 中写 SpEL (Spring Expression Language) Spring 表达式语言
 
    ```java
@@ -505,6 +512,290 @@ public class xxAwareService implements EnvironmentAware{
    只有 Java.lang 下的类可以省略包名。
 
    此写法一般用于引用常量及静态方法（因其可直接被类名调用）[^1]
+
+
+
+#### @PropertySource
+
+在默认情况下，application.properties 是当前项目的配置文件。但将所有配置集中在一个配置文件中可读性极差。
+
+故，可以为需要的类创建单独的 .properties, 并在该类上使用 @PropertySource 注解声明配置文件的来源（映射）。
+
+```java
+	/**
+	 * Indicate the resource locations of the properties files to be loaded.
+	 * <p>The default {@link #factory() factory} supports both traditional and
+	 * XML-based properties file formats &mdash; for example,
+	 * {@code "classpath:/com/myco/app.properties"} or {@code "file:/path/to/file.xml"}.
+	 * <p>As of Spring Framework 6.1, resource location wildcards are also
+	 * supported &mdash; for example, {@code "classpath*:/config/*.properties"}.
+	 * <p>{@code ${...}} placeholders will be resolved against property sources already
+	 * registered with the {@code Environment}. See {@linkplain PropertySource above}
+	 * for examples.
+	 * <p>Each location will be added to the enclosing {@code Environment} as its own
+	 * property source, and in the order declared (or in the order in which resource
+	 * locations are resolved when location wildcards are used).
+	 */
+	String[] value();
+```
+
+由文档，发现应当使用 `@PropertySource("classpath:/com/myco/app.properties")` or `@PropertySource("file:/path/to/file.xml")`
+
+
+
+##### classpath: & file:
+
+###### classpath:
+
+当使用 `classpath:` 来引用资源文件，Java 默认从 `target/classes` 目录开始查找。因为在构建或编译后，所有资源文件（比如 `src/main/resources` 下的文件）会被复制到 `target/classes` 目录下，因此不需要在路径中包含 `target/classes`，直接写资源文件的相对路径即可。`target/classes` 是项目在构建后用于运行时加载类和资源的根目录。
+
+
+
+###### file:
+
+当使用 `file:` 前缀来引用资源时，路径指的是文件系统中的实际路径，而不是编译后的 `classpath` 路径。需要指定从操作系统文件系统中的起始位置来查找文件。`file:` 前缀指向的是文件系统中的路径，必须提供该文件在本地磁盘的完整路径或相对路径（相对于当前工作目录）。
+
+
+
+#### ResourceUtil
+
+Spring 提供的一个工具类，提供 `ResourceUtil.getFile()` 等一系列方法，通过 `.getFile()` 方法，可以使用 classpath: 来获得 File，简化了文件操作。
+
+```java 
+File file = ResourceUtil.getFile("classpath:abc.jpg");
+
+// 如需获得 io 流，则
+new FileInputStream(file);
+```
+
+
+
+#### @Profile
+
+在不同的环境下会有不同的配置需求，此时则可以使用 @Profile 注解，从 application.properties 中快速切换。
+
+@Profile can be used on class and method.
+
+
+
+For example, if you have 3 databases corresponding respectively for dev, test, and production environment.
+
+1. Firstly, writting a class to save info about each database. Like:
+
+   ```java
+   @Data
+   public class MyDataSource {
+       private String url;
+       private String username;
+       private String password;
+       private String driver;
+   }
+   ```
+
+   **important:** do not use `@Component` to inject this component into container caz if you do this, it will be singleton and will be inject into container at the beginning of creating this container, but actually you need to have 3 different beans, and injecting them depending on different settings. So, the way to deal with it is to writting a config class and creating beans by yourself.
+
+
+
+2. So, Secondly, writting the config class used to register beans by yourself.
+
+   ```java
+   @Configuration
+   public class DataSourceConfig {
+   
+       @Bean("dev")
+       public MyDataSource dev() {
+           MyDataSource myDataSource = new MyDataSource();
+           myDataSource.setUrl("for dev");
+           myDataSource.setUsername("for dev");
+           myDataSource.setPassword("for dev");
+           myDataSource.setDriver("for dev");
+           return myDataSource;
+       }
+   
+       @Bean("test")
+       public MyDataSource test() {
+           MyDataSource myDataSource = new MyDataSource();
+           myDataSource.setUrl("for test");
+           myDataSource.setUsername("for test");
+           myDataSource.setPassword("for v");
+           myDataSource.setDriver("for test");
+           return myDataSource;
+       }
+   
+       @Bean("production")
+       public MyDataSource production() {
+           MyDataSource myDataSource = new MyDataSource();
+           myDataSource.setUrl("for production");
+           myDataSource.setUsername("for production");
+           myDataSource.setPassword("for production");
+           myDataSource.setDriver("for production");
+           return myDataSource;
+       }
+   }
+   ```
+
+   
+
+3. Thirdly, writting the class where you need to use this DataSource class, in this case it might be a Dao class.
+
+   ```java
+   @Repository
+   public class DeliveryDao {
+       
+       @Autowired
+       MyDataSource dataSource; // Error
+       
+       public void saveDelivery() {
+           System.out.println(dataSource + "is saving..");
+       }
+   }
+   ```
+
+   here have a bug caz there are three MyDataSource in container. Need to find a way to choose which one need to be used.
+
+   there are many ways in normal condition, for example you can use @Primary & @Qualifier, but in this way you need to change core code very often, it is not a good way. Or maybe you can use @Conditional to choose a bean to @Autowired, it works but Spring provides a **more effective way**, that is **@Profile**. It allows you to switch different beans **in application.properties.**
+
+   By the way, `@Profile` is actually **extends** from `@Conditional`.
+
+
+
+4. Adding @Profile
+
+   ```java
+   @Configuration
+   public class DataSourceConfig {
+   
+       @Profile({"dev", "default"}) // default added here
+       @Bean("dev")
+       public MyDataSource dev() {
+           MyDataSource myDataSource = new MyDataSource();
+           myDataSource.setUrl("for dev");
+           myDataSource.setUsername("for dev");
+           myDataSource.setPassword("for dev");
+           myDataSource.setDriver("for dev");
+           return myDataSource;
+       }
+   
+       @Profile("test")
+       @Bean("test")
+       public MyDataSource test() {
+           MyDataSource myDataSource = new MyDataSource();
+           myDataSource.setUrl("for test");
+           myDataSource.setUsername("for test");
+           myDataSource.setPassword("for v");
+           myDataSource.setDriver("for test");
+           return myDataSource;
+       }
+   ```
+
+   - @Profile("环境标识")：利用环境标识能实现 只有当这个环境被激活的时候，该组件才会被装入容器中
+   - default 环境必须存在，由源码发现其底层是 String[]，故可以将某一个环境标识设置为包含 default 的数组
+
+   
+
+   测试:
+
+   ```java
+   @SpringBootApplication
+   public class Spring01IocApplication {
+   
+       public static void main(String[] args) {
+           ConfigurableApplicationContext context = SpringApplication.run(Spring01IocApplication.class, args);
+           DeliveryDao bean = context.getBean(DeliveryDao.class);
+           bean.saveDelivery();
+       }
+   }
+   
+   ---------------
+     
+   Output: MyDataSource(url=for dev, username=for dev, password=for dev, driver=for dev) is saving..
+   ```
+
+
+
+5. 如需切换不同环境，只需要在 application.config 中使用 kv 对 切换
+
+   ```properties
+   spring.profiles.active=test
+   ```
+
+
+
+#### 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
