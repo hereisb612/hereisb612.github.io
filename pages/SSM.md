@@ -705,8 +705,6 @@ For example, if you have 3 databases corresponding respectively for dev, test, a
            bean.saveDelivery();
        }
    }
-   
-   ---------------
      
    Output: MyDataSource(url=for dev, username=for dev, password=for dev, driver=for dev) is saving..
    ```
