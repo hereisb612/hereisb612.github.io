@@ -859,41 +859,155 @@ Process finished with exit code 0
 
 
 
-1. 调用 pojo 的**构造器**，完成基础对象的构造
-2. 完成 pojo 属性的**自动注入**
-3. 调用 @Bean 设置的**初始化方法**，对此对象完成规定的初始化操作，
-4. 所有需要注册的组件全部装入容器后，**容器初始化完成**
-5. 组件**执行**
-6. 执行完所有代码后，调用 @Bean 设置的**销毁方法**，对此对象完成规定的销毁操作
-7. 释放容器
 
 
+
+
+#### InitializingBean & DisposableBean
+
+##### InitializingBean
+
+Can also make pojo class implements **InitializingBean** and overrides a function called afterPropertiesSet. 
+
+This function will be executed **after all setter finishing**.
+
+
+
+##### DisposableBean
+
+This function will be executed **after ** beans' code running.
+
+
+
+#### @PostConstruct
+
+对 pojo 中的任意方法均可使用此注解修饰，当修饰时，该方法将在构造器后执行
+
+
+
+#### @Predestroy
+
+对 pojo 中的任意方法均可使用此注解修饰，当修饰时，该方法将在组件销毁前执行
+
+
+
+#### BeanPostProcessor
+
+> 回调感知：某步骤发生后调用的函数，用来通知 “xx发生了”。
+
+
+
+以上的生命周期感知函数都没有返回值，所以只能用于修改对象值，而不能修改对象的类型。而 BeanPostProcessor 不同，它有返回值。也就是说 BeanPostProcessor 能够做强制拦截，获取输入的组件和组件名，return 一个新的 Object，以此就能实现对象类型的修改，进行人工的再包装。
+
+```java
+@Component
+public class MyTestBeanPostProcessor implements BeanPostProcessor {
+
+    @Override
+    public Object postProcessBeforeInitialization(Object bean, String beanName) throws BeansException {
+        return bean;
+    }
+
+    @Override
+    public Object postProcessAfterInitialization(Object bean, String beanName) throws BeansException {
+        return bean;
+    }
+}
+```
+
+皆传入 bean 和 bean 的名字，允许对 bean 进行修改之后 return 给下一步。
+
+
+
+@Autowired 等注解的实现过程：
+
+在构造器创建后，BeanPostProcessor 来检查所有的属性和注解，如果发现有属性被 @Autowired 修饰，则利用反射为其赋值，以此实现了自动注入。可以说 @Autowired 就是由 BeanPostProcessor 来实现的。
+
+
+
+#### 组件生命周期总结
 
 ![img](../imgs/BeanLifeCycle.svg)
 
 
 
+#### 参照 @Autowired 的原理手写一个自动给 uuid 赋值的注解
+
+> 利用反射。
+>
+> 验证属性上是否有注解。如果有，则使用 setter 反射赋值即可。
 
 
 
+1. 写一个 UUID 注解
 
+```java
+@Target({ElementType.FIELD})
+@Retention(RetentionPolicy.RUNTIME)
+@Documented
+public @interface UUID {
+}
 
+```
 
+2. 写一个需要用到 @UUID 实现自动生成 uuid 的 pojo
 
+```java
+@Component("UUID_pojo")
+@Data
+public class UUID_pojo {
+    @UUID
+    private String uuid;
+}
+```
 
+3. 写一个 BeanPostProcessor
 
+```java
+@Component
+public class UUID_BeanPostProcessor implements BeanPostProcessor {
+    @Override
+    public Object postProcessBeforeInitialization(Object bean, String beanName) throws BeansException {
+        // 此处发现 BeanPostProcessor 是应用全局的，所以应当判断一下被拦截的 bean 是否是想要处理的 bean
+        if (bean instanceof UUID_pojo) {
+          	// 如果是，则利用反射注入值。
+          	// 先获取类对象
+            Class<?> beanClass = bean.getClass();
 
+            try {
+                // 获得可能被 @UUID 注解修饰的属性
+                Field uuidFiled = beanClass.getDeclaredField("uuid");
+                // 获得 @UUID 注解
+                com.forty2.training.spring.ioc.annotation.UUID annotation = uuidFiled.getAnnotation(com.forty2.training.spring.ioc.annotation.UUID.class);
+                
+                // 如果属性被 @UUID 注解修饰
+                if (annotation != null) {
+                    // 找到 set 方法
+                    Method setUuid = beanClass.getDeclaredMethod("setUuid",String.class);
+                    uuidFiled.setAccessible(true);
+                    // 在 bean 实例上，注入自动生成的 uuid
+                    setUuid.invoke(bean, UUID.randomUUID().toString());
+                }
+            } catch (Exception e) {
+                throw new RuntimeException(e);
+            }
+        }
+        return bean;
+    }
+}
 
+```
 
+4. 测试
 
-
-
-
-
-
-
-
-
+```java
+@SpringBootApplication
+public class Spring01IocApplication {
+    public static void main(String[] args) {
+        ConfigurableApplicationContext context = SpringApplication.run(Spring01IocApplication.class, args);
+        System.out.println(context.getBean("UUID_pojo"));
+    }
+```
 
 
 
