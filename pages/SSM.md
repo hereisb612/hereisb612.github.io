@@ -210,15 +210,15 @@ public class PersonConfig {
 
 1. 使用配置类，在配置类中写好工厂方法，手动加入容器中，like:
 
-```java
-@Configuration
-public class ExampleConfig{
-  @Bean
-  public A a(){
-    return new A();
-  }
-}
-```
+   ```java
+   @Configuration
+   public class ExampleConfig{
+     @Bean
+     public A a(){
+       return new A();
+     }
+   }
+   ```
 
 2. 在主入口类或容器中任何一个组件上使用 `@Import(Example.class)` 注解，来导入组件，仅需导入一次
 3. 更推荐使用一个单独的配置类，如 `AppConfig` 来管理与整个程序相关的注解
