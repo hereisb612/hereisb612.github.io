@@ -869,7 +869,7 @@ Process finished with exit code 0
 
 
 
-![@Bean 生命周期示意图](https://github.com/hereisb612/hereisb612.github.io/blob/main/imgs/%40Bean%20生命周期.svg)
+![img](https://github.com/hereisb612/hereisb612.github.io/blob/main/imgs/%40Bean%20生命周期.svg)
 
 
 
