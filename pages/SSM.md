@@ -941,73 +941,73 @@ public class MyTestBeanPostProcessor implements BeanPostProcessor {
 
 1. 写一个 UUID 注解
 
-```java
-@Target({ElementType.FIELD})
-@Retention(RetentionPolicy.RUNTIME)
-@Documented
-public @interface UUID {
-}
+  ```java
+  @Target({ElementType.FIELD})
+  @Retention(RetentionPolicy.RUNTIME)
+  @Documented
+  public @interface UUID {
+  }
 
-```
+  ```
 
 2. 写一个需要用到 @UUID 实现自动生成 uuid 的 pojo
 
-```java
-@Component("UUID_pojo")
-@Data
-public class UUID_pojo {
-    @UUID
-    private String uuid;
-}
-```
+  ```java
+  @Component("UUID_pojo")
+  @Data
+  public class UUID_pojo {
+      @UUID
+      private String uuid;
+  }
+  ```
 
 3. 写一个 BeanPostProcessor
 
-```java
-@Component
-public class UUID_BeanPostProcessor implements BeanPostProcessor {
-    @Override
-    public Object postProcessBeforeInitialization(Object bean, String beanName) throws BeansException {
-        // 此处发现 BeanPostProcessor 是应用全局的，所以应当判断一下被拦截的 bean 是否是想要处理的 bean
-        if (bean instanceof UUID_pojo) {
-          	// 如果是，则利用反射注入值。
-          	// 先获取类对象
-            Class<?> beanClass = bean.getClass();
+  ```java
+  @Component
+  public class UUID_BeanPostProcessor implements BeanPostProcessor {
+      @Override
+      public Object postProcessBeforeInitialization(Object bean, String beanName) throws BeansException {
+          // 此处发现 BeanPostProcessor 是应用全局的，所以应当判断一下被拦截的 bean 是否是想要处理的 bean
+          if (bean instanceof UUID_pojo) {
+              // 如果是，则利用反射注入值。
+              // 先获取类对象
+              Class<?> beanClass = bean.getClass();
 
-            try {
-                // 获得可能被 @UUID 注解修饰的属性
-                Field uuidFiled = beanClass.getDeclaredField("uuid");
-                // 获得 @UUID 注解
-                com.forty2.training.spring.ioc.annotation.UUID annotation = uuidFiled.getAnnotation(com.forty2.training.spring.ioc.annotation.UUID.class);
-                
-                // 如果属性被 @UUID 注解修饰
-                if (annotation != null) {
-                    // 找到 set 方法
-                    Method setUuid = beanClass.getDeclaredMethod("setUuid",String.class);
-                    uuidFiled.setAccessible(true);
-                    // 在 bean 实例上，注入自动生成的 uuid
-                    setUuid.invoke(bean, UUID.randomUUID().toString());
-                }
-            } catch (Exception e) {
-                throw new RuntimeException(e);
-            }
-        }
-        return bean;
-    }
-}
+              try {
+                  // 获得可能被 @UUID 注解修饰的属性
+                  Field uuidFiled = beanClass.getDeclaredField("uuid");
+                  // 获得 @UUID 注解
+                  com.forty2.training.spring.ioc.annotation.UUID annotation = uuidFiled.getAnnotation(com.forty2.training.spring.ioc.annotation.UUID.class);
 
-```
+                  // 如果属性被 @UUID 注解修饰
+                  if (annotation != null) {
+                      // 找到 set 方法
+                      Method setUuid = beanClass.getDeclaredMethod("setUuid",String.class);
+                      uuidFiled.setAccessible(true);
+                      // 在 bean 实例上，注入自动生成的 uuid
+                      setUuid.invoke(bean, UUID.randomUUID().toString());
+                  }
+              } catch (Exception e) {
+                  throw new RuntimeException(e);
+              }
+          }
+          return bean;
+      }
+  }
+
+  ```
 
 4. 测试
 
-```java
-@SpringBootApplication
-public class Spring01IocApplication {
-    public static void main(String[] args) {
-        ConfigurableApplicationContext context = SpringApplication.run(Spring01IocApplication.class, args);
-        System.out.println(context.getBean("UUID_pojo"));
-    }
-```
+  ```java
+  @SpringBootApplication
+  public class Spring01IocApplication {
+      public static void main(String[] args) {
+          ConfigurableApplicationContext context = SpringApplication.run(Spring01IocApplication.class, args);
+          System.out.println(context.getBean("UUID_pojo"));
+      }
+  ```
 
 
 
