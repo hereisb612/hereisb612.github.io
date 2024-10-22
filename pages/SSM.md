@@ -719,13 +719,82 @@ For example, if you have 3 databases corresponding respectively for dev, test, a
 
 
 
-#### 
+### 容器 - 原生方式使用
+
+```java
+@SpringBootApplication
+public class Spring01IocApplication {
+    public static void main(String[] args) {
+        ConfigurableApplicationContext ioc = SpringApplication.run(Spring01IocApplication.class, args);
+        }
+    }
+```
+
+`SpringApplication.run(Spring01IocApplication.class, args);` 这种启动方式是来自 Springboot 的。
+
+如果想要使用 Spring framework 的原生方式启动，应手动 new ioc 容器。在本例中可 new ClassPathXmlApplicationContext 类，其意为在 **使用类路径下的某个 xml 文件作为 Spring 本身的配置文件来完成容器的创建**。
+
+```java
+public class Spring01IocApplication {
+    public static void main(String[] args) {
+        ApplicationContext ioc = new ClassPathXmlApplicationContext("classpath:spring-ioc.xml");
+    }
+```
+
+配置文件如：
+
+```xml
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd">
+
+</beans>
+```
+
+使用该方法创建的容器，如果没有手动注册各类组件，则其中的组件为空，为一个纯净的容器。
+
+xml 的注册方式：
+
+```xml
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd">
+
+    <bean id="person" class="com.forty2.training.spring.ioc.pojo.Person">
+        <property name="name" value="ethan"/>
+        <property name="age" value="23"/>
+        <property name="gender" value="Male"/>
+    </bean>
+</beans>
+```
+
+开启批量扫描（扫描使用注解注册过的）:
+
+```xml
+<?xml version="1.0" encoding="UTF-8"?>
+<beans 
+		...
+    <context:component-scan base-package="com.forty2.training.spring.ioc"/> 
+</beans>
+```
+
+导入外部属性文件：
+
+```xml
+<?xml version="1.0" encoding="UTF-8"?>
+<beans 
+		...
+    <context:property-placeholder location="dog.properties"/>
+</beans>
+```
+
+由此可见 xml 方式的原生使用很繁琐，所以淘汰为使用 Springboot 及注解、注解类的方式使用
 
 
 
-
-
-
+### 容器 - 组件生命周期
 
 
 
