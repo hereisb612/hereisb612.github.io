@@ -1,4 +1,4 @@
-# Spring[^0]
+# Spring[^1]
 
 ## 容器
 
@@ -511,7 +511,7 @@ public class xxAwareService implements EnvironmentAware{
 
    只有 Java.lang 下的类可以省略包名。
 
-   此写法一般用于引用常量及静态方法（因其可直接被类名调用）[^1]
+   此写法一般用于引用常量及静态方法（因其可直接被类名调用）[^2]
 
 
 
@@ -977,5 +977,5 @@ Process finished with exit code 0
 
 遵循 CC 4.0 BY-SA 版权协议，转载请附上原文出处链接和本声明。
 
-[^0]:  https://www.bilibili.com/video/BV14WtLeDEit/?p=33&share_source=copy_web&vd_source=732a79db14c78dbec659a1afbe66586e
-[^1]: https://blog.csdn.net/ZBZBZB12138/article/details/122597702
+[^1]:  https://www.bilibili.com/video/BV14WtLeDEit/?p=33&share_source=copy_web&vd_source=732a79db14c78dbec659a1afbe66586e
+[^2]: https://blog.csdn.net/ZBZBZB12138/article/details/122597702
