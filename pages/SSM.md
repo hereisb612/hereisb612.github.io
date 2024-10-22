@@ -1,4 +1,4 @@
-# Spring
+# Spring[^0]
 
 ## 容器
 
@@ -796,6 +796,85 @@ xml 的注册方式：
 
 ### 容器 - 组件生命周期
 
+#### @Bean 的生命周期
+
+```java
+@Configuration
+public class UserConfig {
+
+    @Bean(initMethod = "initUser", destroyMethod = "destroyUser")
+    public User user(){
+        return new User();
+    }
+}
+```
+
+使用 `@Bean` 注解中的两个参数 `initMethod` & `destroyMethod` 来引用 User 中的方法，以此来将这两个方法设置为**初始化时执行的**，及**销毁时执行的**。
+
+```java
+@Data
+public class User {
+    private String username;
+    private String password;
+    
+    public User(){
+        System.out.println("构造器..");
+    }
+
+    public void initUser(){
+        System.out.println("@Bean 初始化, initUser..");
+    }
+
+    public void destroyUser(){
+        System.out.println("@Bean 销毁, destroyUser..");
+    }
+}
+```
+
+this pojo has constructer, init method and destroy method, 执行顺序经测试为：
+
+```java
+ :: Spring Boot ::                (v3.3.4)
+
+2024-10-22T16:42:09.832+08:00  INFO 29230 --- [spring-01-ioc] [           main] c.f.t.spring.ioc.Spring01IocApplication  : Starting Spring01IocApplication using Java 17.0.12 with PID 29230 (/Users/ethan/IdeaProjects/ssm-parent/spring-01-ioc/target/classes started by ethan in /Users/ethan/IdeaProjects/ssm-parent)
+  
+2024-10-22T16:42:09.833+08:00  INFO 29230 --- [spring-01-ioc] [           main] c.f.t.spring.ioc.Spring01IocApplication  : No active profile set, falling back to 1 default profile: "default"
+  
+构造器..
+  
+com.forty2.training.spring.ioc.pojo.Car@36453307 组件中的属性值的自动注入..
+  
+@Bean 初始化, initUser..
+  
+2024-10-22T16:42:10.041+08:00  INFO 29230 --- [spring-01-ioc] [           main] c.f.t.spring.ioc.Spring01IocApplication  : Started Spring01IocApplication in 0.325 seconds (process running for 0.486)
+  
+== 容器初始化完成 ==
+  
+User(username=null, password=null, car=com.forty2.training.spring.ioc.pojo.Car@36453307) bean 开始执行..
+  
+@Bean 销毁, destroyUser..
+
+Process finished with exit code 0
+```
+
+
+
+1. 调用 pojo 的**构造器**，完成基础对象的构造
+2. 完成 pojo 属性的**自动注入**
+3. 调用 @Bean 设置的**初始化方法**，对此对象完成规定的初始化操作，
+4. 所有需要注册的组件全部装入容器后，**容器初始化完成**
+5. 组件**执行**
+6. 执行完所有代码后，调用 @Bean 设置的**销毁方法**，对此对象完成规定的销毁操作
+7. 释放容器
+
+
+
+![@Bean 生命周期示意图](../imgs/@Bean 生命周期.svg)
+
+
+
+
+
 
 
 
@@ -898,4 +977,5 @@ xml 的注册方式：
 
 遵循 CC 4.0 BY-SA 版权协议，转载请附上原文出处链接和本声明。
 
+[^0]:  https://www.bilibili.com/video/BV14WtLeDEit/?p=33&share_source=copy_web&vd_source=732a79db14c78dbec659a1afbe66586e
 [^1]: https://blog.csdn.net/ZBZBZB12138/article/details/122597702
