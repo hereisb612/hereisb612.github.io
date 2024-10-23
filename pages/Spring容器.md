@@ -1,8 +1,6 @@
-# Spring[^1]
+# Spring 容器[^1]
 
-## 容器
-
-### 容器 - 组件注册
+## 组件注册
 
 组件：具有一定功能的对象
 
@@ -22,14 +20,14 @@ DI：Dependency Injection 依赖注入
 
 
 
-#### Basic Spring Environment Creating In Idea
+### Basic Spring Environment Creating In Idea
 
 1. create a parent project, and make it packing to pom
 2. create new model by using SpringBoot option
 
 
 
-#### 主程序类、主入口类
+### 主程序类、主入口类
 
 ```java
 /**
@@ -57,7 +55,7 @@ public class Spring01IocApplication {
 
 
 
-#### 注册组件的方式
+### 注册组件的方式
 
 ``````java
 @SpringBootApplication
@@ -81,7 +79,7 @@ public class example {
 
 
 
-#### 组件的命名规则
+### 组件的命名规则
 
 - if do not set bean's name mannually, methods' name is bean's name. Like in above code, the bean's name is person in default.
 - The way to set bean's name is that key in name in `@Bean(name)`, for example:
@@ -99,7 +97,7 @@ public class example {
 
 
 
-#### 组件特性
+### 组件特性
 
 - 名字、类型、对象、作用域
 - 组件名要求全局唯一
@@ -110,27 +108,27 @@ public class example {
 
 
 
-#### 获取组件的方式
+### 获取组件的方式
 
-##### 通过组件的名字获取
+#### 通过组件的名字获取
 
 ``````java
 Person example = (Person) ioc.getBean("example");
 ``````
 
-##### 通过组件的类型获取
+#### 通过组件的类型获取
 
 ```java
 Person bean = ioc.getBean(Person.class);
 ```
 
-##### 通过组件的名字及类型获取
+#### 通过组件的名字及类型获取
 
 ```java
 Person person = ioc.getBean("example", Person.class);
 ```
 
-##### 通过组件类型，获取到该类型的所有组件
+#### 通过组件类型，获取到该类型的所有组件
 
 ```java
 Map<String, Person> beansOfType = ioc.getBeansOfType(Person.class);
@@ -141,7 +139,7 @@ beansOfType.forEach((k, v) -> {
 
 
 
-#### MVC 分层模型对应注解
+### MVC 分层模型对应注解
 
 - @Configuration for Configuration Class
 - @Controller for Controller Class
@@ -151,7 +149,7 @@ beansOfType.forEach((k, v) -> {
 
 
 
-#### Configuration
+### Configuration
 
 - 组件：框架的底层配置
   - 配置文件：指定配置的文件
@@ -179,7 +177,7 @@ public class PersonConfig {
 
 
 
-#### @bean in ConfigurationClass VS @Component
+### @bean in ConfigurationClass VS @Component
 
 - 使用 `@Configuration` 修饰的类是配置类，通常包含通过 `@Bean` 注解注册的方法，称为工厂方法。
 
@@ -192,7 +190,7 @@ public class PersonConfig {
 
   
 
-#### @ComponentScan
+### @ComponentScan
 
 默认情况下，分层注解能起作用的前提是，这些组件必须在主程序所在的包 及其子包结构下
 
@@ -202,7 +200,7 @@ public class PersonConfig {
 
 
 
-#### 第三方组件导入容器
+### 第三方组件导入容器
 
 > 因为第三方组件的源码通常无法修改，所以无法通过标记分层注解的方式来导入容器
 >
@@ -225,7 +223,7 @@ public class PersonConfig {
 
 
 
-#### @Scope
+### @Scope
 
 >  用于调整组件的作用域，默认是 `@Scope("singleton")` 单实例
 
@@ -244,13 +242,13 @@ public class PersonConfig {
 
 
 
-#### @Lazy
+### @Lazy
 
 > 用于 `@Scope("singleton")` 时，因为单实例时，所有组件是在容器初始化时创建好的，所以对于有懒加载需求的组件，可以使用 `@Lazy` 来设置。
 
 
 
-#### @FactoryBean<>
+### @FactoryBean<>
 
 > 如果制造某些对象的过程比较复杂，不是用注解可以直接搞定的，则可以使用 FactoryBean，在 getObject() 中写复杂逻辑
 
@@ -282,7 +280,7 @@ public class PersonConfig {
 
 
 
-#### @Conditional
+### @Conditional
 
 > 此注解可以令组件在满足某些条件时才被创建并加载进容器
 
@@ -295,7 +293,7 @@ public class PersonConfig {
 
 
 
-#### Conditional 派生注解
+### Conditional 派生注解
 
 有一系列派生注解可以使用
 
@@ -307,9 +305,9 @@ public class PersonConfig {
 
 
 
-### 容器 - 注入
+## 注入
 
-#### @Autowired
+### @Autowired
 
 > 自动装配。
 >
@@ -345,7 +343,7 @@ ApplicationContext ioc; // 注入 ioc 容器本体
 
 
 
-#### @Qualify & @Primary
+### @Qualify & @Primary
 
 > **Error**: Field person in UserService required a single bean, but 3 were found.
 >
@@ -361,7 +359,7 @@ ApplicationContext ioc; // 注入 ioc 容器本体
 
 
 
-#### @Resource
+### @Resource
 
 > import jakarta.annotation.Resource;
 >
@@ -377,7 +375,7 @@ ApplicationContext ioc; // 注入 ioc 容器本体
 
 
 
-#### 构造器注入
+### 构造器注入
 
 ```java
 @Repository
@@ -400,7 +398,7 @@ public class UserDao {
 
 
 
-#### Setter 方法注入
+### Setter 方法注入
 
 ```java
   @Autowired
@@ -436,7 +434,7 @@ public class UserDao {
 
 
 
-#### xxxAware 感知接口
+### Aware 感知接口
 
 > Aware 接口下有一系列子接口，用于一系列内容。可以通过这些感知接口自带的 set 方法获取内容给属性。
 >
@@ -460,7 +458,7 @@ public class xxAwareService implements EnvironmentAware{
 
 
 
-#### @Value
+### @Value
 
 @Autowired 是用来自动注入**组件**的，但一些基本数据类型，如 `String name` 是无法通过 @Autowired 完成注入的。
 
@@ -515,7 +513,7 @@ public class xxAwareService implements EnvironmentAware{
 
 
 
-#### @PropertySource
+### @PropertySource
 
 在默认情况下，application.properties 是当前项目的配置文件。但将所有配置集中在一个配置文件中可读性极差。
 
@@ -543,21 +541,21 @@ public class xxAwareService implements EnvironmentAware{
 
 
 
-##### classpath: & file:
+#### classpath: & file:
 
-###### classpath:
+##### classpath:
 
 当使用 `classpath:` 来引用资源文件，Java 默认从 `target/classes` 目录开始查找。因为在构建或编译后，所有资源文件（比如 `src/main/resources` 下的文件）会被复制到 `target/classes` 目录下，因此不需要在路径中包含 `target/classes`，直接写资源文件的相对路径即可。`target/classes` 是项目在构建后用于运行时加载类和资源的根目录。
 
 
 
-###### file:
+##### file:
 
 当使用 `file:` 前缀来引用资源时，路径指的是文件系统中的实际路径，而不是编译后的 `classpath` 路径。需要指定从操作系统文件系统中的起始位置来查找文件。`file:` 前缀指向的是文件系统中的路径，必须提供该文件在本地磁盘的完整路径或相对路径（相对于当前工作目录）。
 
 
 
-#### ResourceUtil
+### ResourceUtil
 
 Spring 提供的一个工具类，提供 `ResourceUtil.getFile()` 等一系列方法，通过 `.getFile()` 方法，可以使用 classpath: 来获得 File，简化了文件操作。
 
@@ -570,7 +568,7 @@ new FileInputStream(file);
 
 
 
-#### @Profile
+### @Profile
 
 在不同的环境下会有不同的配置需求，此时则可以使用 @Profile 注解，从 application.properties 中快速切换。
 
@@ -719,7 +717,7 @@ For example, if you have 3 databases corresponding respectively for dev, test, a
 
 
 
-### 容器 - 原生方式使用
+## 原生方式使用
 
 ```java
 @SpringBootApplication
@@ -794,9 +792,9 @@ xml 的注册方式：
 
 
 
-### 容器 - 组件生命周期
+## 组件生命周期
 
-#### @Bean 的生命周期
+### @Bean 的生命周期
 
 ```java
 @Configuration
@@ -863,9 +861,9 @@ Process finished with exit code 0
 
 
 
-#### InitializingBean & DisposableBean
+### InitializingBean & DisposableBean
 
-##### InitializingBean
+#### InitializingBean
 
 Can also make pojo class implements **InitializingBean** and overrides a function called afterPropertiesSet. 
 
@@ -873,25 +871,25 @@ This function will be executed **after all setter finishing**.
 
 
 
-##### DisposableBean
+#### DisposableBean
 
 This function will be executed **after ** beans' code running.
 
 
 
-#### @PostConstruct
+### @PostConstruct
 
 对 pojo 中的任意方法均可使用此注解修饰，当修饰时，该方法将在构造器后执行
 
 
 
-#### @Predestroy
+### @Predestroy
 
 对 pojo 中的任意方法均可使用此注解修饰，当修饰时，该方法将在组件销毁前执行
 
 
 
-#### BeanPostProcessor
+### BeanPostProcessor
 
 > 回调感知：某步骤发生后调用的函数，用来通知 “xx发生了”。
 
@@ -925,13 +923,13 @@ public class MyTestBeanPostProcessor implements BeanPostProcessor {
 
 
 
-#### 组件生命周期总结
+### 组件生命周期总结
 
 ![img](../imgs/BeanLifeCycle.svg)
 
 
 
-#### 参照 @Autowired 的原理手写一个自动给 uuid 赋值的注解
+### 参照 @Autowired 的原理手写一个自动给 uuid 赋值的注解
 
 > 利用反射。
 >
@@ -1011,79 +1009,40 @@ public class MyTestBeanPostProcessor implements BeanPostProcessor {
 
 
 
+## 单元测试
 
+Spring 提供了单元测试类的注解，使用 `@SpringBootTest` 修饰即可，用于测试容器功能。
 
 
 
+该类对存储位置有要求，即：**单元测试类所在的包，一定是主程序所在的包**。
 
+![testClassName](../imgs/TestClassName.png)
 
 
 
+```java
+@SpringBootTest
+public class HelloTest {
+    @Autowired
+    User user;
 
+    @Test
+    public void test01() {
+        System.out.println("user: " + user);
+    }
+}
+```
 
+在 SpringBootTest 中，组件可以使用 @Autowired 完成自动注入，省略获得组件并 getBean() 的过程。
 
 
 
+PS: **@Autowired not applicable to local variables**, which means that you need to used it out of function.
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+----
 
 
 

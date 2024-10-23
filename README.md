@@ -2,14 +2,6 @@
 
 Here are all the things about myself. Using both English and Mandarin to write.
 
-## Java
-
-[SSM](./pages/SSM.md)
-
-[SpringMVC](./pages/SpringMVC.md)
-
-[MyBatis](./pages/MyBatis.md)
-
-## Tools
-
-[Git](./pages/Git.md)
+## SSM
+[Spring 容器](./pages/Spring容器.md)
+[Spring AOP](./pages/SpringAOP.md)
