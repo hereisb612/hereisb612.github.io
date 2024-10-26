@@ -361,21 +361,21 @@ AOP: Aspect Oriented Programming 面向切面编程
 
          省略后：int add(int, int)
 
-      ```java
-      @Aspect
-      @Component
-      public class LogAspect {
-          @Before("execution(int *(int, int))")		// 全体方法有效
-          public void logStart(){
-              System.out.println("LogAspect.logStart");
-          }
-      
-          @After("execution(int add(int, int))")		// 指定方法有效
-          public void logEnd(){
-              System.out.println("LogAspect.logEnd");
-          }
-      }
-      ```
+   ```java
+   @Aspect
+   @Component
+   public class LogAspect {
+       @Before("execution(int *(int, int))")		// 全体方法有效
+       public void logStart(){
+           System.out.println("LogAspect.logStart");
+       }
+   
+       @After("execution(int add(int, int))")		// 指定方法有效
+       public void logEnd(){
+           System.out.println("LogAspect.logEnd");
+       }
+   }
+   ```
 
 4. 测试
 
