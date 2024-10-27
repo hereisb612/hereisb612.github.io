@@ -294,6 +294,8 @@ JDK 自带的动态代理要求目标对象**必须实现接口**，因为需要
 
 AOP: Aspect Oriented Programming 面向切面编程
 
+Spring 将自动为目标对象产生一个代理对象，此代理对象的作用就是自动侦测代码执行到的时机，把切面类中定义的通知方法织入代码逻辑中。
+
 
 
 ![AOPwords](../imgs/AOPwords.svg)
@@ -314,15 +316,13 @@ AOP: Aspect Oriented Programming 面向切面编程
 
 **切入点**：可以挑选**感兴趣**的连接点来设置其对应的通知方法执行，如图蓝色示。被选中的、希望在此连接点**将通知方法插入执行的位置**称为切入点。也可以称切入点为 真正会执行通知方法的点。
 
-**织入**：Spring 将自动为目标对象产生一个代理对象，此代理对象的作用就是自动侦测代码执行到的时机，把切面类中定义的通知方法**织入**代码逻辑中。***代理对象将从切面类中拿到对应的通知方法，动态的发现目标对象执行到哪一个连接点，如果该连接点是感兴趣的连接点（切点），就将相应的通知方法动态的织入目标对象的代码逻辑中。***
+**织入**：代理对象将从切面类中拿到对应的通知方法，动态的发现目标对象执行到哪一个连接点，如果该连接点是感兴趣的连接点（切点），就将相应的通知方法动态的织入目标对象的代码逻辑中。
 
 **切入点表达式**：选出自己感兴趣的切入点的方式
 
 
 
 ## 计算器案例的 AOP 实现
-
-### 步骤
 
 1. 引入 aop 的 dependency。copy starter 后面加 aop 即可。
    ```xml
@@ -378,6 +378,283 @@ AOP: Aspect Oriented Programming 面向切面编程
    ```
 
 4. 测试
+
+
+
+## 表达式通配符
+
+1. \* 标识任意字符，可以放在 返回值、方法名、包的全类名路径中
+
+   eg: * *(int)	* *(\*, int)
+
+2. .. 放在参数位置表示任意类型的多个参数，放在包的全类名中表示多个层级
+
+   eg: * *(..)	  * *(.., int)
+
+3. 常用写法
+
+   某接口的所有方法 `int com.forty2.training.spring.aop.calculator.MathCalculator.*(..)`
+
+   对类型约束的要精确，如果一不小心切入到底层的方法，可能项目启动会失败
+
+
+
+## 切入点表达式[^2]
+
+Spring AOP supports the following AspectJ pointcut designators (PCD) for use in pointcut expressions:
+
+- **`execution`: For matching method execution join points. This is the primary pointcut designator to use when working with Spring AOP.**
+
+  ```java
+  @Before("execution(int com.forty2.training.spring.aop.calculator.MathCalculator.*(..))")
+  public void logStart() {
+      System.out.println("LogAspect.logStart");
+  }
+  ```
+
+- `within`: Limits matching to join points within certain types (the execution of a method declared within a matching type when using Spring AOP).
+
+- `this`: Limits matching to join points (the execution of methods when using Spring AOP) where the bean reference (Spring AOP proxy) is an instance of the given type.
+
+- `target`: Limits matching to join points (the execution of methods when using Spring AOP) where the target object (application object being proxied) is an instance of the given type.
+
+- `args`: Limits matching to join points (the execution of methods when using Spring AOP) where the arguments are instances of the given types.
+
+- `@target`: Limits matching to join points (the execution of methods when using Spring AOP) where the class of the executing object has an annotation of the given type.
+
+- `@args`: Limits matching to join points (the execution of methods when using Spring AOP) where the runtime type of the actual arguments passed have annotations of the given types.
+
+- `@within`: Limits matching to join points within types that have the given annotation (the execution of methods declared in types with the given annotation when using Spring AOP).
+
+- **`@annotation`: Limits matching to join points where the subject of the join point (the method being run in Spring AOP) has the given annotation.**
+
+  ```java
+  @Before("@annotation(com.forty2.training.spring.aop.annotation.MyAnnotation)")
+  public void forAtAnnotationTest() {
+      System.out.println("LogAspect.forAtAnnotationTest");
+  }
+  ```
+
+  经一通测试，似乎 annotation 要标记在实现类上？
+
+  
+
+## 代理对象 Spring VS JDK
+
+获取实现类的 class 对象
+
+```java
+@SpringBootTest
+public class AOPTest {
+    @Autowired
+    MathCalculator mathCalculator;
+
+    @Test
+    public void test1() {
+        System.out.println(mathCalculator.getClass());
+    }
+}
+```
+
+### 开启 AOP 
+
+在切面类通过 @Component 放入容器中时，MathCalculator 的实现类为
+
+class com.forty2.training.spring.aop.calculator.impl.**CalculatorImpl$$SpringCGLIB$$0**
+
+### 关闭 AOP
+
+在切面类没有通过 @Component 放入容器中时，MathCalculator 的实现类为
+
+class com.forty2.training.spring.aop.calculator.impl.**CalculatorImpl**
+
+### 原因
+
+在有切面存在时，容器中放入的**被切入的组件（目标对象）**将是由 Spring 底层的 **SpringCGLIB** 产生的代理对象。
+
+JDK 原生的 Proxy 动态代理的要求是目标对象必须实现接口，因为要将动态代理对象生成为接口类型才能多态的装回，并通过接口获得到目标对象所拥有的方法，顺利完成调用。而 SpringCGLIB 则没有必须实现接口的要求，可以为万物产生代理。
+
+### 结论
+
+以后只要发现某个组件被切面切入了，那么容器中的该组件就不再是原生的该组件了，而是被 Spring 动态代理过的代理对象。
+
+
+
+## 增强器链
+
+### what is
+
+切面当中的所有通知方法被称作增强器，这些增强器被组织成一个链路放到集合中。
+
+目标方法真正执行前后会去增强器链中执行那些需要被执行的方法。
+
+### AOP 原理
+
+Spring 会为每个被切面切入的组件通过 Spring CGLIB 创建代理对象，该代理对象中保存了切面类里面所有通知方法构成的增强器链，目标方法执行时会先去增强器链中拿到需要提前执行的通知方法去执行，以此实现 AOP
+
+### 通知方法的执行顺序
+
+正常链路：前置通知 -> 目标方法 -> 返回通知 -> 后置通知
+
+异常链路：前置通知 -> 目标方法 -> 异常通知 -> 后置通知
+
+
+
+## AOP 细节
+
+### JoinPoint 连接点信息
+
+可以通过参数列表传入 `JoinPoint`，本连接点里包装了当前目标方法的所有信息
+
+```java
+@After("execution(* *(int, int))")
+public void logEnd(JoinPoint joinPoint) {
+    MethodSignature signature = (MethodSignature) joinPoint.getSignature();
+    String name = signature.getName();
+    System.out.println(name);
+
+    Object[] args = joinPoint.getArgs();
+    System.out.println(Arrays.toString(args));
+}
+```
+
+getSignature() 可以获得 Signature 类型的方法全签名，强转成 MethodSignature caz MethodSignature extends from Signature, have more effective methods could be used.
+
+can also use getArgs() on JoinPoint to get all of args of target methods.
+
+
+
+### 获得目标方法返回值
+
+```java
+@AfterReturning(value = "execution(* *(int, int))",
+returning = "result")
+public void logReturn(Object result) {
+    System.out.println("result: " + result);
+}
+```
+
+using returning to **bind** formal variable with the returning value of target method.
+
+
+
+### 获得目标方法异常信息
+
+```java
+@AfterThrowing(value = "execution(* *(int, int))",
+        throwing = "e")
+public void logException(Exception e) {
+    System.out.println(e.getMessage() + "eee");
+}
+```
+
+using throwing to bind Exception Object.
+
+
+
+### @PointCut 抽取切入点表达式
+
+可以随意定义一个方法，将该方法用 @Pointcut(execution()) 修饰。
+
+此时，该方法就可以作为一个引用，完成对切入点表达式的抽取，方便统一管理。
+
+```java
+@Aspect
+@Component
+public class LogAspect {
+    
+    @Pointcut("execution(int com.forty2.training.spring.aop.calculator.MathCalculator.*(..))")
+    public void pointCut() {}
+    
+    @Before("pointCut()")
+    public void logStart() {
+        System.out.println("LogAspect.logStart");
+    }
+}
+```
+
+
+
+### 多切面的执行顺序
+
+#### 切面执行原理
+
+![AspectOrder](../imgs/AspectOrder.svg)
+
+
+
+#### @Order demo
+
+```java
+@Aspect
+@Component
+@Order(1)
+public class LogAspect {
+
+    @Pointcut("execution(int com.forty2.training.spring.aop.calculator.MathCalculator.*(..))")
+    public void pointCut() {}
+
+    @Before("pointCut()")
+    public void logStart() {
+        System.out.println("LogAspect.logStart");
+    }
+
+    @After("pointCut()")
+    public void logEnd() {
+        System.out.println("LogAspect.logEnd");
+    }
+}
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -447,3 +724,4 @@ AOP: Aspect Oriented Programming 面向切面编程
 
 [^1]: https://www.bilibili.com/video/BV14WtLeDEit/?p=33&share_source=copy_web&vd_source=732a79db14c78dbec659a1afbe66586e
 
+[^2]: https://docs.spring.io/spring-framework/reference/core/aop/ataspectj/pointcuts.html
