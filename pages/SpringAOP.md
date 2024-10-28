@@ -608,45 +608,148 @@ public class LogAspect {
 
 
 
+## Spring 工具类
+
+- TypeUtils
+- ReflectionUtils
+- AnnotationUtils
+- ClassUtils
 
 
 
+## BeanFactory 里的核心集合
+
+Spring 底层的 IOC 容器是使用 Map 来实现的。
+
+阅读源码 `return getBeanFactory().getBean(requiredType);` 可知，Spring 中所有 bean 的图纸是在 beanFactory 中的。
+
+Spring 在启动时会扫描所有写好的组件，并制造相关的图纸，保存在 BeanFactory - **beanDefinationMap** 中。
+
+容器启动时，将挨个拿图纸进行对象的制造，制造好的对象被保存在 BeanFactory-  **singletonObjects** 中。
 
 
 
+![BeanFactory](../imgs/BeanFactory.svg)
 
 
 
+## 三级缓存机制[^3]
+
+为解决循环依赖的问题而引入的
+
+因为 Spring 默认是单例模式的，如果没有三级缓存引入的成品区及半成品区，在创建对象涉及到互相依赖的情况时，将会循环依赖。
+
+详细解释参见标题引用。
+
+### 三级 Map
+
+- Map<String, Object> singletonObjects				单例对象池		**成品区**
+- Map<String, Object> earlySingletonObjects       		早期单例对象池        **半成品区**
+- Map<String, ObjectFactory<?>> singletonFactories          单例工厂池                **实现了 ObjectFactory 接口的**
+
+### 循环引用
+
+循环引用是默认关闭的，如果想要开启，需要在 application.properties 中开启。
+
+```xml
+spring.main.allow-circular-references=true
+```
 
 
 
+## AOP 环绕通知
+
+@Before、@AfterReturning、@AfterThrowing、@After 是感知通知，只能在感知到后做通知操作。
+
+而 @Around 是环绕通知，不但是上四种的四合一版本，还可以控制目标方法是否执行、修改目标方法参数及执行结果等内容。
+
+@Around 可以真正的实现**动态代理**的强大功能，如修改参数返回值等。
+
+```java
+@Aspect
+@Component
+public class AroundAspect {
+
+    @Pointcut("execution(int com.forty2.training.spring.aop.calculator.MathCalculator.*(..))")
+    public void pointCut() {
+    }
+
+    @Around("pointCut()")
+    public Object aroundAdvice(ProceedingJoinPoint joinPoint) throws Throwable {
+        Object[] args = joinPoint.getArgs(); // 获取参数
+
+        System.out.println("before");	// 前置通知
+        Object result = null;
+
+        try {
+            args[0] = 1;
+            result = joinPoint.proceed(args); // 修改参数，调用目标方法
+            System.out.println("afterReturning"); // 返回通知
+        } catch (Throwable e) {
+            System.out.println("Exception" + e.getMessage()); // 异常通知
+          	throw e; // 抛出异常给外层代理对象
+        } finally {
+            System.out.println("after"); // 后置通知
+        }
+
+        return result; // 修改结果
+    }
+}
+```
+
+写法**固定**：public Object aroundAdvice(ProceedingJoinPoint joinPoint) throws Throwable(){}
+
+此处使用 ProceedingJoinPoint 可推进的连接点来实现目标方法的调用。返回值要求 Object 因为要兼容目标方法的返回值类型。
+
+`throw e;` **一定**要写。如果不写，在代理对象包裹代理对象的情况下将发生逻辑上的错误。外层代理对象将无法感知到内层发生异常，则外层的异常通知则不会感知到而生效，从而在 返回通知、异常通知 的岔路口执行返回通知，导致虽然内层发生了异常，但外层依旧正常返回的逻辑错误。当 throw e 后，外层将能接收到一个 exception 对象，从而正确的触发异常通知。
 
 
 
+## AOP 总结
 
+### 总结
 
+AOP 本质上是一个**拦截**逻辑，在目标方法前后都能做事，甚至能按动态代理的方式修改目标方法的参数返回值等内容。
 
+### 应用场景
 
+由上的功能得出，模版化的业务逻辑（分步完成的）都能由 AOP 来完成。
 
+***模版化* 的业务逻辑**里，大部分都是相同的功能，只有某些步骤是有区别的。那么相同的步骤则可以通过 AOP 来完成。
 
+#### 事务场景
 
+1. 获取数据库连接
+2. 设置非自动提交
+3. **执行 SQL**
+4. **封装返回值**
+5. 正常：提交
+6. 异常：回滚
+7. 关闭连接、释放资源
 
+本例中，只有 3、4 的业务步骤不同，其他步骤均相同，那么将其他步骤作为切面就是很好的选择
 
+#### 权限场景
 
+假设有一个 @Role() 注解修饰方法，注解的 value 为用户的权限标识
 
+则调用方法时的模版业务逻辑为：
 
+1. 获取用户身份信息
+2. 拿到目标方法上的所有注解
+3. 判断用户是否符合注解的权限要求
+4. **符合：执行目标方法**
+5. 不符合：记录非法请求
 
+本例中，其他步骤均相同，只有步骤 4 中需要被执行的目标方法不同，所以依旧适合 AOP
 
+#### 日志记录
 
+见计算器的日志场景实现
 
+#### 异常处理
 
-
-
-
-
-
-
-
+#### 缓存管理
 
 
 
@@ -725,3 +828,5 @@ public class LogAspect {
 [^1]: https://www.bilibili.com/video/BV14WtLeDEit/?p=33&share_source=copy_web&vd_source=732a79db14c78dbec659a1afbe66586e
 
 [^2]: https://docs.spring.io/spring-framework/reference/core/aop/ataspectj/pointcuts.html
+[^3]: https://b23.tv/f0ViEzI
+
