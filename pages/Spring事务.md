@@ -1,4 +1,4 @@
-# Spring 事务
+# Spring 事务[^1]
 
 ## 声明式事务 vs 编程式事务
 
@@ -238,5 +238,157 @@ public class UserServiceImpl implements UserService {
 
    此时事务管理即开启开启，可除 0 或 throw Exception 测试。
 
+### Spring 事务原理
+
+Spring 底层有一个Transaction Interceptor 事务拦截器切面，还有 TransactionalManager 事务管理器，由这两个器完成事务的管理。
+
+事务管理器只定义（控制）了事务的提交和回滚，事务管理器的调用由切面实现，由事务拦截器切面控制何时提交、何时回滚。即方法前调用 getTransaction()，感知到执行正确调用 commit()，异常则调用 rollback()
+
+### TransactionalManager
+
+> @Transactional 的属性
+
+用于指定容器中的某个 bean 作为事务管理器，为接口，实现类下有三个方法控制事务的获取、提交和回滚。
+
+Spring 底层默认使用 JDBCTransactionalManager
+
+- TransactionalStatus 用于封装事务信息，getTransactional() 用于获取该对象
+- commit() 用于提交
+- rollback() 用于回滚
+
+### Propagation 传播行为[^2]
+
+Spring 事务传播机制是指，包含多个事务的方法在相互调用时，事务是如何在这些方法间传播的。
+
+既然是“事务传播”，所以事务的数量应该在两个或两个以上，Spring 事务传播机制的诞生是为了规定多个事务在传播过程中的行为的。
+
+**比如方法 A 开启了事务，而在执行过程中又调用了开启事务的 B 方法，那么 B 方法的事务是应该加入到 A 事务当中呢？还是两个事务相互执行互不影响，又或者是将 B 事务嵌套到 A 事务中执行呢？所以这个时候就需要一个机制来规定和约束这两个事务的行为，这就是 Spring 事务传播机制所解决的问题。**
 
 
+
+Spring 事务传播机制可使用 @Transactional(propagation=Propagation.REQUIRED) 来定义，Spring 事务传播机制的级别包含以下 7 种：
+
+1. **Propagation.REQUIRED**（需要，总得有一个）：
+
+   默认的事务传播级别，它表示如果当前存在事务，则加入该事务；如果当前没有事务，则创建一个新的事务。
+
+2. Propagation.SUPPORTS（支持，可以有也可以没有）：
+
+   如果当前存在事务，则加入该事务；如果当前没有事务，则以非事务的方式继续运行。
+
+3. Propagation.MANDATORY：（强制，有就用，没有就报错）
+
+   如果当前存在事务，则加入该事务；如果当前没有事务，则抛出异常。
+
+4. **Propagation.REQUIRES_NEW**（总是需要新的）：
+
+   表示创建一个新的事务，如果当前存在事务，则把当前事务挂起。也就是说不管外部方法是否开启事务，Propagation.REQUIRES_NEW 修饰的内部方法会新开启自己的事务，且开启的事务相互独立，互不干扰。
+
+5. Propagation.NOT_SUPPORTED（不支持，暂停当前事务运行）：
+
+   以非事务方式运行，如果当前存在事务，则把当前事务挂起。
+
+6. Propagation.NEVER（拒绝，有事务就报错）：
+
+   以非事务方式运行，如果当前存在事务，则抛出异常。
+
+7. Propagation.NESTED（基于保存点）：
+
+   基于**保存点/存档点**。
+
+   如果当前存在事务，则创建一个事务作为当前事务的嵌套事务来运行；如果当前没有事务，则该取值等价于 PROPAGATION_REQUIRED。
+
+#### 案例
+
+在结账方法中实现：发生异常时，金额的扣减回滚，但库存不回滚
+
+```java
+@Transactional
+checkout(){
+		扣减金额; // required，和大事务绑定，大事务回滚时一同回滚
+    扣减库存; // requires_new，创建单独事务，其不参与大事务的回滚
+    i = 10/0; // 异常导致外层事务回滚
+}
+```
+
+由案例得：对传播行为预期的设置应当放在小事务上，用于规范小事务的执行方式
+
+### isolation 隔离级别
+
+> 控制读的。因为涉及到**修改**时数据库底层设计就会加**锁**，即使并发修改也无需担心数据安全。
+
+1. Read Uncommitted 读未提交
+
+   事务可以读取 未被提交 的数据，易产生脏读、不可重复读、幻读等问题
+
+2. Read Committed 读已提交
+
+   事务只能读取 已经提交 的数据，可以避免脏读，但可能引发不可重复读和幻读
+
+3. Repeatable Read 可重复读 
+
+   同一事务期间多次重复读取的数据相同，可以避免脏读和不可重复读，但仍然有幻读的情况发生
+
+4. Serializable 串行化
+
+   最高的隔离级别，完全禁止了并发，只允许一个事务执行完毕后才能执行另一个事务
+
+### timeout 控制事务超时时间
+
+一旦超过约定时间，事务即视为回滚。
+
+@Transactional 注解下有 timeout 和 stringTimeOut 两种，分别是以 int 和 String 传入 **秒数** 的。
+
+超时时间指：从方法进入，到最后一次数据库操作结束的时间。
+
+### readOnly
+
+如果事务是只读的，那么就可以将 readOnly 设置为 true，开启底层对于只读事务的自动优化。
+
+### rollBackFor
+
+> 用于额外指定哪些异常需要回滚
+
+对于异常有一个**默认的回滚机制**：**运行时异常回滚、编译时异常不回滚**。
+
+rollBackFor 是用来将默认不回滚的编译时异常手动设置回滚的。
+
+当设置了 rollBackFor 时，需要回滚的异常就变成了：运行时异常 + 手动指定的编译时异常
+
+使用 rollBackFor 指定哪些异常需要被回滚，此处参数应当为 Throwable 的类。另有一个可以使用字符串传入类名的版本，按下不表。
+
+### noRollBackFor
+
+> 额外指明哪些异常不需要回滚
+
+编译时异常 + 额外指明的运行时异常 = 不回滚
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+------
+
+
+
+## 引用
+
+遵循 CC 4.0 BY-SA 版权协议，转载请附上原文出处链接和本声明。
+
+[^1]: https://www.bilibili.com/video/BV14WtLeDEit/?p=33&share_source=copy_web&vd_source=732a79db14c78dbec659a1afbe66586e
+
+[^2]: https://www.cnblogs.com/vipstone/p/16735893.html
