@@ -15,4 +15,4 @@ Here are all the things about myself. Using both English and Mandarin to write.
 
 ## Others
 
-[about OINP](./pages/Canada.md)
+[about OINP](./pages/Canada/OINP.md)
