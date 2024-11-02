@@ -1,4 +1,4 @@
-# All info about Canada
+# All info about OINP
 
 ## PGWP
 

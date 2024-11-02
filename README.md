@@ -17,7 +17,7 @@ Using both English and Mandarin to write.
 
 ## Others
 
-[about OINP](./pages/Canada/OINP.md)
+[about OINP](./pages/Policy/OINP.md)
 
 [GitHub Repository](https://github.com/hereisb612/hereisb612.github.io)
 
