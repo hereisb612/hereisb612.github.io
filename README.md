@@ -13,7 +13,7 @@ Using both English and Mandarin to write.
 
 ## SpringMVC
 
-[SpringMVC](./pages/SpringMVC/SpringMVC.md)
+[Spring MVC](./pages/SpringMVC/SpringMVC.md)
 
 ## Others
 
