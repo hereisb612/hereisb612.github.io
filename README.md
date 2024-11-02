@@ -1,6 +1,8 @@
 # Ethan's Blog
 
-Here are all the things about myself. Using both English and Mandarin to write.
+Here are all the things about myself. 
+
+Using both English and Mandarin to write.
 
 ## Spring
 [Spring 容器](./pages/Spring/Spring容器.md)
@@ -16,3 +18,6 @@ Here are all the things about myself. Using both English and Mandarin to write.
 ## Others
 
 [about OINP](./pages/Canada/OINP.md)
+
+[GitHub Repository](https://github.com/hereisb612/hereisb612.github.io)
+
