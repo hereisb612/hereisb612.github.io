@@ -184,35 +184,131 @@ public String test5() {
 
 
 
-## HTTP
+## 请求处理
 
+### 分别收集请求参数
 
+```java
+@RestController
+public class IndexDemoController {
 
+    @RequestMapping("/handle01")
+    /*
+    http://localhost:8080/handle01?
+    username=1&
+    password=2&
+    cellphone=1&
+    agreement=on
+     */
+    public String handle01(String username,String password,String cellphone, String agreement) {
+        System.out.println(username);
+        System.out.println(password);
+        System.out.println(cellphone);
+        System.out.println(agreement);
+        return "ok!";
+    }
+}
+```
 
+请求为注释内的内容。requestMapping 的地址为 form 的 action。
 
+普通变量的键值对可以自动封装。
 
+**默认情况下，请求中的每个参数都会携带内容，如果内容为空，包装类型则自动封装为 null，基本类型自动为默认值。**
 
+#### **@RequestParam("name")** 
 
+在直接写变量进行自动封装的时候，要求**变量名为请求中 key 的名字**。如果不匹配，可以用 **@RequestParam("name")** 进行映射。
 
+在使用 **@RequestParam("name")**  时，要求该注解修饰的参数必须有对应的值，如果请求中不携带则会报错。在此情况下，可以使用 required=false 来使其可以不携带参数，不携带参数时的规则与默认相同，即如果内容为空，包装类型则自动封装为 null，基本类型自动为默认值。
 
+同时，@RequestParam 注解还有 defaultValue 属性，如果没有携带参数则使用 defaultValue。在有defaultValue 的情况下，只有无 defaultValue 且无 required=false 才会报错。
 
+### Pojo 收集请求参数
 
+```java
+@RequestMapping("handle03")
+public String handle03(Person person) {
+    System.out.println(person);
+    return "ok!";
+}
+```
 
+如果目标方法的参数是一个 pojo，SpringMVC 会利用反射自动映射封装。
 
+如果请求参数没带（url 中无键值对），则会封装为 null。如果url 中的值为空，则封装为空字符串。
 
+**没带参数指 url 中无键值对**
 
+pojo 的 defaultValue 可以直接在 pojo 中 `private String username="defaultValue";`
 
+### 获取请求头
 
+```java
+@RequestMapping("handle04")
+public String handle04(@RequestHeader("host") String host) {
+    System.out.println(host);
+    return "OK";
+}
+```
 
+使用 @RequestHeader("key") 注解即可获得请求头中的内容。
 
+### 获取 cookie
 
+```java
+@RequestMapping("handle05")
+public String handle05(@CookieValue("cookie1") String cookie1) {
+    System.out.println(cookie1);
+    return "OK";
+}
+```
 
+使用 @CookieValue("key") 获取 cookie 的值，同一个请求中可以有多个 cookie 被获取。
 
+### pojo 级连封装复杂属性
 
+> http://localhost:8080/handle06?username=zhangsan&password=psw&cellphone=173&
+> address.province=hebei&address.city=normal&address.area=uni&sex=男&
+> hobby=足球&hobby=篮球&grade=四年级&agreement=on
 
+对于这种复杂属性的封装，Spring 依旧可以完成 pojo 自动注入。pojo 的属性与请求参数类型对应即可。
 
+```java
+package com.forty2.training.springmvc.bean;
 
+import lombok.Data;
 
+@Data
+public class Person {
+    private String username;
+    private String password;
+    private String cellphone;
+    private String agreement;
+    private Address address;
+    private String[] hobby;
+    private String grade;
+}
+
+@Data
+class Address {
+    private String province;
+    private String city;
+    private String area;
+}
+
+```
+
+```java
+public String handle06(Person person) {
+    System.out.println(person);
+    return "ok";
+}
+```
+
+*output:* Person(username=zhangsan, password=psw, cellphone=173, agreement=on, address=Address(province=hebei, city=normal, area=uni), hobby=[足球, 篮球], grade=四年级)
+
+### 使用 RequestBody 封装 json 对象
 
 
 

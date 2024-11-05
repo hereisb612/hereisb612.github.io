@@ -165,7 +165,6 @@ public void test2() {
 
     System.out.println(proxyInstance.add(1, 2));
 }
-}
 ```
 
 Proxy.newProxyInstance() 是 Java 原生支持的动态代理对象。其有三个属性：
@@ -298,7 +297,7 @@ Spring 将自动为目标对象产生一个代理对象，此代理对象的作�
 
 
 
-![AOPwords](../imgs/AOPwords.svg)
+![AOPwords](../../imgs/AOPwords.svg)
 
 
 
@@ -579,7 +578,7 @@ public class LogAspect {
 
 #### 切面执行原理
 
-![AspectOrder](../imgs/AspectOrder.svg)
+![AspectOrder](../../imgs/AspectOrder.svg)
 
 
 
@@ -629,7 +628,7 @@ Spring 在启动时会扫描所有写好的组件，并制造相关的图纸，�
 
 
 
-![BeanFactory](../imgs/BeanFactory.svg)
+![BeanFactory](../../imgs/BeanFactory.svg)
 
 
 
