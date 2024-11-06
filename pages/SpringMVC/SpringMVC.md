@@ -308,26 +308,199 @@ public String handle06(Person person) {
 
 *output:* Person(username=zhangsan, password=psw, cellphone=173, agreement=on, address=Address(province=hebei, city=normal, area=uni), hobby=[足球, 篮球], grade=四年级)
 
-### 使用 RequestBody 封装 json 对象
+### 使用 @RequestBody 封装 json 对象
+
+1. 使用 Postman 可以在请求体里添加 json 对象
+
+2. @RequestBody 可以将请求体内的 json 对象以字符串形式接收
+
+   ```json
+   {
+       "username":"ethan",
+       "password":"password",
+       "cellphone":"173",
+       "agreement":"true",
+       "hobby":["ball","yellow"],
+       "grade":"grade12",
+       "address":{
+           "province":"hebei",
+           "city":"rockhometown",
+           "area":"qiaoxi"
+       }
+   }
+   ```
+
+   ```java
+   @RequestMapping("/handle07")
+   public String handle07(@RequestBody String json) {
+       System.out.println(json);
+       return "ok";
+   }
+   ```
+
+   *output:* 
+
+   ```json
+   {
+       "username":"ethan",
+       "password":"password",
+       "cellphone":"173",
+       "agreement":"true",
+       "hobby":["ball","yellow"],
+       "grade":"grade12",
+       "address":{
+           "province":"hebei",
+           "city":"rockhometown",
+           "area":"qiaoxi"
+       }
+   }
+   ```
+
+3. 或，可以在 @RequestBody 后接 pojo，Spring 可完成自动封装
+
+   ```java
+   @RequestMapping("/handle08")
+   public String handle07(@RequestBody Person person) {
+       System.out.println(person);
+       return "ok";
+   }
+   ```
+
+   *output:* Person(username=ethan, password=password, cellphone=173, agreement=true, address=Address(province=hebei, city=rockhometown, area=qiaoxi), hobby=[ball, yellow], grade=grade12)
+
+### 文件上传
+
+**路径不太会写**，but playload like:
+
+```
+1. username: 1
+2. password: 1
+3. cellphone: 1
+4. headerImg: (binary)
+5. lifeImg: (binary)
+6. lifeImg: (binary)
+7. agreement: on
+```
+
+```java
+@RequestMapping("/handle08")
+public String handle08(Person person,
+                       @RequestParam("lifeImg") MultipartFile[] lifeImgs,
+                       @RequestParam("headerImg") MultipartFile headerImg) throws IOException {
+    headerImg.transferTo(new File("context"));
+
+    for (MultipartFile lifeImg : lifeImgs) {
+        lifeImg.transferTo(new File("context"));
+    }
+    System.out.println(person);
+    return "ok!";
+}
+```
+
+不是 json 不需要使用 RequestBody 接收，直接用 Person person 就会完成自动封装。
+
+### 取出整个请求
+
+```java
+@RequestMapping("/handle09")
+public String handle09(HttpEntity<String> httpEntity) {
+    System.out.println(httpEntity.getHeaders());
+    System.out.println("=======");
+    System.out.println(httpEntity.getBody());
+    return "ok!";
+}
+```
+
+HttpEntity 封装整个原始请求，包含请求头和请求体。
+
+其中的泛型用来声明**请求体里的内容类型**。
+
+为 String 则将 json 封装为 String。为 pojo 类型时将自动封装转化。
 
 
 
+## 响应处理
 
+### 返回 json
 
+```java
+@RequestMapping("/resp01")
+public Person resp01() {
+    Person person = new Person();
+    return person;
+}
+```
 
+在 SpringMVC 中，会自动把返回的对象转换成 json 格式 。
 
+因为 @RestController 内部隐含了一个 @ResponseBody，用于将返回的内容写回到响应体中。
 
+### 文件下载
 
+格式相对固定，可封装工具类。
 
+```java
+@RequestMapping("/download")
+public ResponseEntity<byte[]> download() throws Exception {
+    FileInputStream fileInputStream = new FileInputStream("/Users/ethan/Desktop/IMG_778679F84A40-1.jpeg");
+    byte[] bytes = fileInputStream.readAllBytes();
 
+    return ResponseEntity.ok()
+      			.contentType(MediaType.APPLICATION_OCTET_STREAM)
+            .contentLength(bytes.length)
+            .header("Content-Disposition", "attachment;filename=FileName.jpeg")
+            .body(bytes);
+}
+```
 
+ResponseEntity: 拿到整个响应数据，含响应头、响应体、状态码。如果是文件下载，则响应体内的内容就是 byte[]，由泛型指定即可。
 
+return 中是核心的返回逻辑：
 
+- ResponseEntity.ok()：ok 里可传泛型。给 pojo 则转成 json，给文件流则开始下载。
 
+- 如果直接 ok 给文件流，则前端不清楚内容类型，返回的是纯粹的 byte[]。所以通常采用链式处理填充内容。
+  1. .ok() 返回无参构造
+  2. 在 .ok() 后链式设定：
+     1. 内容类型为文件流
+     2. 设置内容长度
+     3. 在 header 中设定 Content-Disposition 内容处理方式为 attachment 附件，并设置文件名
+     4. 在 body 中放入文件流所读入的字节数组即可（使用 fis.readAllBytes() 即可）
 
+#### bugFixs
 
+- 文件名为中文时可能出现乱码。
 
+  ```java
+  String encode = URLEncoder.encode("中文.jpg", "UTF-8");
+  "attachment;filename=" + encode
+  ```
 
+- 文件太大会内存溢出 out of memory，因为 bytes[] 是从输入流中 readAllBytes() 得到的。
+
+  解决方法：
+
+  1. 将 ResponseEntity 中响应体的类型设置为 InputStreamResource
+  2. `InputStreamResource resource = new InputStreamResource(inputStream);` 替换掉 readAllBytes() ，将输入流封装成一个输入流资源对象
+  3. ResponseEntity.body() 中由 byte[] 替换为该 InputStreamResource 对象即可
+  4. 由于没有 byte[]，.contentLength() 中可以传入 inputStream.available() 返回的长度
+
+#### 固定模板
+
+```java
+@RequestMapping("/download")
+public ResponseEntity<InputStreamResource> download() throws IOException {
+    FileInputStream fileInputStream = new FileInputStream("/Users/ethan/Desktop/IMG_778679F84A40-1.jpeg");
+    String encode = URLEncoder.encode("文件名.jpeg", StandardCharsets.UTF_8);
+    InputStreamResource inputStreamResource = new InputStreamResource(fileInputStream);
+
+    return ResponseEntity.ok()
+            .contentType(MediaType.APPLICATION_OCTET_STREAM)
+            .contentLength(fileInputStream.available())
+            .header("Content-Disposition", "attachment;filename=" + encode)
+            .body(inputStreamResource);
+}
+```
 
 
 
