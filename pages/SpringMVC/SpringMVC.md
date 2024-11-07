@@ -502,41 +502,249 @@ public ResponseEntity<InputStreamResource> download() throws IOException {
 }
 ```
 
+### 总结
+
+return 中：
+
+@ResponseBody + return 对象 = 响应 json 等非页面数据
+
+HttpEntity<> or **ResponseEntity<>** = 响应完全自定义的响应头、响应体
+
+String = 逻辑视图地址
 
 
 
+## RESTful
 
+Representational State Transfer 表现层状态转移，是一种软件架构风格。
 
+完整理解为 Resource Representational State Transfer，资源表现形式状态转移。即**使用资源名作为 URI**，**使用 HTTP 请求方式表示对资源的操作**。
 
+例如，将订单视为资源。则路径为 */order。对 order 的增删改查分别使用不同的请求方式而不是修改路径。
 
+以 emp 的增删改查为例，**restful api 设计如下**：
 
+| URI        | 请求方式 | 请求体      | 作用           | 返回数据        |
+| ---------- | -------- | ----------- | -------------- | --------------- |
+| /emp/{id}  | GET      | 空          | 查询 id 号员工 | emp json        |
+| /emp       | POST     | emp json    | 新增某员工     | T/F             |
+| /emp       | PUT      | emp json    | 修改某员工     | T/F             |
+| /emp/{id}  | DELETE   | 空          | 删除某员工     | T/F             |
+| /emps      | GET      | 空/查询条件 | 查询所有员工   | List\<emp> json |
+| /emps/page | GET      | 空/分页条件 | 查询所有员工   | 分页数据 json   |
 
+API: Web 应用**暴露出的**让别人访问的**请求路径**
 
+### CRUD 案例
 
+#### Pojo & Dao
 
+1. In dao, use JdbcTemplate to wirte basic crud (Can be found in [Spring 事务](../Spring/Spring事务.md)), like:
 
+   ```java
+   @Component
+   public class EmployeeDaoImpl implements EmployeeDao {
+       @Autowired
+       JdbcTemplate jdbcTemplate;
+   
+       @Override
+       public Employee getEmployeeById(Long id) {
+           String sql = "select * from employee where id = ?";
+           return jdbcTemplate.queryForObject(sql, new BeanPropertyRowMapper<>(Employee.class), id);
+       }
+   
+       @Override
+       public void addEmployee(Employee employee) {
+           String sql = "insert into employee (name, age, email, gender, address, salary) values (?, ?, ?, ?, ?, ?)";
+           jdbcTemplate.update(sql, employee.getName(), employee.getAge(), employee.getEmail(), employee.getGender(), employee.getAddress(), employee.getSalary());
+       }
+   
+       @Override
+       public void updateEmployee(Employee employee) {
+           String sql = "update employee set name=?, age=?, email=?, gender=?, address=? where id=?";
+           jdbcTemplate.update(sql, employee.getName(), employee.getAge(), employee.getEmail(), employee.getGender(), employee.getAddress(), employee.getId());
+       }
+   
+       @Override
+       public void deleteEmployee(Long id) {
+           String sql = "delete from employee where id=?";
+           jdbcTemplate.update(sql, id);
+       }
+   }
+   ```
 
+2. write Pojo
 
+#### Service
 
+在**更新**时，service 层调 dao 时需要考虑**防 null 处理**。
 
+Service 是被 controller 调用的，controller 层传过来的对象可能是有 null 值的，如果 service 不对此进行处理直接转交给 dao，则 dao 会将 null update 为新值，显然不合理。
 
+解决方式是：
 
+1. 查到数据库中需要处理对象的原值，封装为 pojo
 
+2. 将 pojo 中需要修改的参数（非 null 参数）做更新。更新时用 **SpringUtils.hasText()** 做校验，SpringUtils.hasText() 只有不是 null、不是空串、不是空白字符时才会 return true。
 
+   ```java
+   @Override
+   public void updateEmployee(Employee employee) {
+       if (employee.getId() == null) return;
+       Employee temp = employeeDao.getEmployeeById(employee.getId());
+   
+       // about String
+       if (StringUtils.hasText(employee.getName())) {
+           temp.setName(employee.getName());
+       }
+   
+       if (StringUtils.hasText(employee.getEmail())) {
+           temp.setEmail(employee.getEmail());
+       }
+   
+       if (StringUtils.hasText(employee.getAddress())) {
+               temp.setAddress(employee.getAddress());
+           }
+           
+           if (StringUtils.hasText(employee.getGender())){
+               temp.setGender(employee.getGender());
+           }
+           
+           // about int
+           if (employee.getAge() != null && employee.getAge() >= 0) {
+               temp.setAge(employee.getAge());
+           }
+           
+           // about BigDecimal
+           if (employee.getSalary() != null) {
+               temp.setSalary(employee.getSalary());
+           }
+   
+           // finished
+           employeeDao.updateEmployee(employee);
+       }
+   ```
 
+3. 将更新好的交给 dao update
 
+#### Controller
 
+```java
+package com.forty2.training.rest.crud.controller;
 
+@RestController
+public class EmployeeRestController {
 
+    @Autowired
+    EmployeeService employeeService;
 
+    @RequestMapping(value = "/employee/{id}", method = RequestMethod.GET)
+    public Employee get(@PathVariable("id") Long id) {
+        return employeeService.getEmployeeById(id);
+    }
 
+    @DeleteMapping("/employee/{id}")
+    public String delete(@PathVariable("id") Long id) {
+        employeeService.deleteEmployee(id);
+        return "ok!";
+    }
 
+    @PostMapping("/employee")
+    public String add(@RequestBody Employee employee) {
+        employeeService.saveEmployee(employee);
+        return "ok!";
+    }
 
+    @PutMapping("/employee")
+    public String update(@RequestBody Employee employee) {
+        employeeService.updateEmployee(employee);
+        return "ok!";
+    }
+}
 
+```
 
+在 Restful 风格下，可以使用传统的 RequestMapping + method = 请求方式 的方式来完成对不同请求的处理
 
+也可以使用 **@xxxMapping** 这种 rest 映射的注解来简化完成。
 
+路径中可以使用 {} 来包裹变量，并用 **@PathVariable** 来与形参绑定。
 
+##### code & msg 下的返回值统一
+
+在上例中，前端收到的返回值是 json 和 String 混合的，不利于前端操作，所以我们希望给前端一个统一的返回值。
+
+在常规做法中，统一返回 json，并且在 json 中定义一组 **状态码及 msg** 以供前端判断。如，200 为正确，其余均为失败。
+
+前端和后端就是通过状态码和 msg 来交互状态信息，以供前端对不同的情况做出不同的效果显示。
+
+```json
+{
+  "code" : 200,					// 业务状态码
+  "msg" : "余额不足",    // 服务端提示消息
+  "data" : {} or []    // 返回给前端的数据
+}
+```
+
+1. 定义一个 R 类型，用于统一结果的返回。数据作为其中的 data。并提供有 data 及无 data 的两个重载版本。
+
+   ```java
+   @Data
+   public class R {
+       private Integer code;
+       private String msg;
+       private Object data;
+   
+       public static R ok() {
+           R r = new R();
+           r.setCode(200);
+           r.setMsg("ok");
+           return r;
+       }
+   
+       public static R ok(Object data) {
+           R r = ok();
+           r.setData(data);
+           return r;
+       }
+   }
+   ```
+
+2. 优化上文中的 Controller 代码
+
+   ```java
+   @RestController
+   public class EmployeeRestController {
+   
+       @Autowired
+       EmployeeService employeeService;
+   
+       @GetMapping("/employee/{id}")
+       public R get(@PathVariable("id") Long id) {
+           return R.ok(employeeService.getEmployeeById(id));
+       }
+   
+       @DeleteMapping("/employee/{id}")
+       public R delete(@PathVariable("id") Long id) {
+           employeeService.deleteEmployee(id);
+           return R.ok();
+       }
+   
+       @PostMapping("/employee")
+       public R add(@RequestBody Employee employee) {
+           employeeService.saveEmployee(employee);
+           return R.ok();
+       }
+   
+       @PutMapping("/employee")
+       public R update(@RequestBody Employee employee) {
+           employeeService.updateEmployee(employee);
+           return R.ok();
+       }
+   }
+   ```
+
+3. 至此完成前后端通过 json 的格式统一
 
 
 
