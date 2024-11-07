@@ -17,7 +17,8 @@ Using both English and Mandarin to write.
 
 ## Others
 
-[about OINP](./pages/Policy/OINP.md)
+[about OINP](./pages/Others/OINP.md)
+
+[Admission Timeline](./pages/Others/AdmissionTimeLine.md)
 
 [GitHub Repository](https://github.com/hereisb612/hereisb612.github.io)
-
