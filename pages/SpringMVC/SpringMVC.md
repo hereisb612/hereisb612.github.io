@@ -746,6 +746,30 @@ public class EmployeeRestController {
 
 3. 至此完成前后端通过 json 的格式统一
 
+4. 提供失败的方法
+
+   ```java
+   public static R error() {
+       R r = new R();
+       r.setCode(500);
+       r.setMsg("error");
+       return r;
+   }
+   
+   public static R error(Integer code, String msg) {
+       R r = new R();
+       r.setCode(code);
+       r.setMsg(msg);
+       return r;
+   }
+   
+   public static R error(Integer code, String msg, Object data) {
+       R r = error(code, msg);
+       r.setData(data);
+       return r;
+   }
+   ```
+
 
 
 
