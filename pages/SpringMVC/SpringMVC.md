@@ -770,7 +770,19 @@ public class EmployeeRestController {
    }
    ```
 
+#### @PathVariable 其他写法
 
+- /recourses/{name} 
+  - **最多使用**。
+  - {} 中的值封装到 name 变量中
+- /recourses/{*path}。
+  - {} 中的值封装到 path 变量中。*path 指 resources 后的多层路径。
+    - /recourses/img.png -> **path=/img.png**
+    - /recourses/css/spring.css -> **path=/css/spring.css**
+- /recourses/{filename:\\\w+}.后缀，正则写法的约束
+  - {} 中的值封装到 filename 变量中。filename 满足 \\\w+正则要求
+  - /recourses/{filename:\\\\w+}.后缀
+  - /recourses/{filename:\\\\w+}.后缀
 
 ## CORS Policy 跨源资源共享
 
@@ -787,6 +799,11 @@ public class EmployeeRestController {
 ### CORS
 
 同源策略会引起 **跨域(源)资源共享 CORS**，即当前要访问的域名和目前所在的域名不符。
+
+复杂的跨域请求会发送两次：
+
+1. options 请求：预检请求。浏览器会先发送 options 请求，询问服务器是否允许当前域名进行跨域访问。服务器若允许，则会在这次请求的响应体中携带 Access-Control-Allow-Origin = ? 字段，通知浏览器跨域资源共享被允许。
+2. 在服务器允许后才会发送真正的请求。
 
 ### CORS 的解决方法
 
@@ -805,11 +822,17 @@ public class EmployeeRestController {
 
 
 
+## 最佳实践
 
+### 拦截器
 
+SpringMVC 内置**拦截器**机制，允许 **在请求被目标方法处理的前后** 进行拦截，执行一些**额外操作**。比如：权限验证、日志记录、数据共享等。
 
+#### 实现步骤
 
-
+1. **实现 HandlerInterceptor 接口**的组件即可成为拦截器
+2. 创建 WebMvcConfigurer 组件，并**配置拦截器的拦截路径**
+3. 执行顺序效果：**preHandle -> 目标方法 -> postHandle -> afterCompletion**
 
 
 
