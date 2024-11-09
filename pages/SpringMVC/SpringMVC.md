@@ -830,9 +830,76 @@ SpringMVC 内置**拦截器**机制，允许 **在请求被目标方法处理的
 
 #### 实现步骤
 
-1. **实现 HandlerInterceptor 接口**的组件即可成为拦截器
-2. 创建 WebMvcConfigurer 组件，并**配置拦截器的拦截路径**
-3. 执行顺序效果：**preHandle -> 目标方法 -> postHandle -> afterCompletion**
+1. **实现 HandlerInterceptor 接口**的**组件**即可成为拦截器。重写对应的方法即可在内部完成逻辑处理。
+
+   preHandle() return true 则放行，目标方法可以继续执行。
+
+   ```java
+   @Component
+   public class MyHandlerInterceptor implements HandlerInterceptor {
+       @Override
+       public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler) throws Exception {
+           System.out.println("preHandle...");
+           return true;
+       }
+   
+       @Override
+       public void postHandle(HttpServletRequest request, HttpServletResponse response, Object handler, ModelAndView modelAndView) throws Exception {
+           System.out.println("postHandle...");
+       }
+   
+       @Override
+       public void afterCompletion(HttpServletRequest request, HttpServletResponse response, Object handler, Exception ex) throws Exception {
+           System.out.println("afterCompletion...");
+       }
+   }
+   ```
+
+2. 创建配置类，并使用 @Configuration 注解声明这是一个专门对 SpringMVC 底层做配置的配置类。
+
+3. 向容器中注册 WebMvcConfigurer 组件。声明 WebMvcConfigurer 有两种方法：
+
+   - 让配置类实现 WebMvcConfigurer 接口，则配置类自动成为 WebMvcConfigure 组件
+
+     ```java
+     public class MySpringMvcConfig implements WebMvcConfigurer {}
+     ```
+
+   - 在配置类中，使用 @Bean 添加 new 出的 WebMvcConfigurer 组件。
+
+     本例代码是将 myWebMvcConfigurer() 方法 return 的返回值对象作为组件注入，并对该匿名类重写拦截器注册的方法，进行拦截器的注册。
+
+     ```java
+     @Bean
+     WebMvcConfigurer myWebMvcConfigurer() {
+         return new WebMvcConfigurer() {
+             @Override
+             public void addInterceptors(InterceptorRegistry registry) {
+                 WebMvcConfigurer.super.addInterceptors(registry);
+             }
+         };
+     }
+     ```
+
+4. 为拦截器设置拦截路径。
+
+   在本例中，MyHandlerInterceptor 应当为自动注入的，不能在 registry.addInterceptor(myHandlerInterceptor) 中 new 新的 MyHandlerInterceptor 对象，否则违反 Spring 的单例哲学。
+
+   ```java
+   @Configuration 
+   public class MySpringMvcConfig implements WebMvcConfigurer {
+       @Autowired
+       MyHandlerInterceptor myHandlerInterceptor;
+   
+       @Override
+       public void addInterceptors(InterceptorRegistry registry) {
+           registry.addInterceptor(myHandlerInterceptor)
+                   .addPathPatterns("/**");
+       }
+   }
+   ```
+
+5. 执行顺序效果：**preHandle -> 目标方法 -> postHandle -> afterCompletion**
 
 
 
