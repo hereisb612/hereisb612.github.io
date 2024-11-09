@@ -855,7 +855,7 @@ SpringMVC 内置**拦截器**机制，允许 **在请求被目标方法处理的
    }
    ```
 
-2. 创建配置类，并使用 @Configuration 注解声明这是一个专门对 SpringMVC 底层做配置的配置类。
+2. 创建配置类，并使用 @Configuration 注解声明这是一个专门对 SpringMVC 底层做配置的配置类，该配置类需要完成 WebMvcConfigurer 组件的注册，对 SpringMVC 底层做配置就基于这个 WebMvcConfigurer 组件来完成。 
 
 3. 向容器中注册 WebMvcConfigurer 组件。声明 WebMvcConfigurer 有两种方法：
 
@@ -901,13 +901,67 @@ SpringMVC 内置**拦截器**机制，允许 **在请求被目标方法处理的
 
 5. 执行顺序效果：**preHandle -> 目标方法 -> postHandle -> afterCompletion**
 
+6. 因为拦截器的 preHandle 可以通过返回值限定是否放行，所以可以实现权限检查等需要 执行/不执行 的功能。不执行时，可以使用 response.getWriter().write("error 通知")
 
+### 异常处理
 
+#### 编程式异常处理
 
+通过 try - catch - finally 完成。但在实际业务中，可能每个操作都会有对应的异常，所以使用编程式异常处理方式会非常繁琐。
 
+#### 声明式异常处理
 
+Spring 提供了一系列注解，可以通过注解简化异常处理。推荐使用。
 
+使用 @ExceptionHandler(value = ArithmeticException.class) 声明异常类型后，对应异常发生时则会转移至对应的异常处理函数完成异常的处理。
 
+如果 Controller 本类出现异常，会自动的在本类中找有没有 @ExceptionHandler 标注的方法。如果有，则调用该方法，该方法的返回值就是客户端收到的请求。在下例中，因为是 @RestController，隐含 @ResponseBody，所以返回值以 R 对象的 json 形式返回。 
+
+```java
+@RestController
+public class AnnoExceptionController {
+
+    @GetMapping("/hello")
+    public R hello(@RequestParam(value = "i", defaultValue = "2") Integer i) {
+        int j = 10 / i;
+        return R.ok(j);
+    }
+
+    @ExceptionHandler(value = ArithmeticException.class)
+    public R handleArithmeticException(ArithmeticException e) {
+        return R.error(233, "异常发生, " + e.getMessage());
+    }
+}
+```
+
+*output:* 
+
+```json
+{
+    "code": 233,
+    "msg": "异常发生, / by zero",
+    "data": null
+}
+```
+
+@ExceptionHandler 的 value 是数组，所以可以同一个方法处理多个异常。
+
+```java
+public @interface ExceptionHandler {
+    Class<? extends Throwable>[] value() default {};
+}
+```
+
+如果不需要严谨的分异常处理，甚至可以使用一个方法接收所有的 Throwable，like：
+
+```java
+@ExceptionHandler(Throwable.class)
+public R handleArithmeticException(Throwable throwable) {
+    return R.error(233, "Throwable: " + throwable.getMessage());
+}
+```
+
+在有**多个** @ExceptionHandler 都能处理一个异常时，则**精确优先**。最精确的异常处理器会被调用。
 
 
 
