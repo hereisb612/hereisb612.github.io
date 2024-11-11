@@ -963,19 +963,98 @@ public R handleArithmeticException(Throwable throwable) {
 
 在有**多个** @ExceptionHandler 都能处理一个异常时，则**精确优先**。最精确的异常处理器会被调用。
 
+#### 全局异常处理
 
+@ExceptionHandler 只对**注解所处类中**的 Throwable 做处理，其他 Controller 中的异常无法被处理。
 
+可以通过 @ControllerAdvice 来完成全局异常的统一处理。
 
+```java
+@RestControllerAdvice
+public class GlobalExceptionHandler {
+    @ExceptionHandler(value = Exception.class)
+    public R error(Exception e) {
+        return R.error(500, e.getMessage());
+    }
+}
+```
 
+@ControllerAdvice 中的 Advice 有增强含义，其会告诉 SpringMVC 该组件专门负责全局异常的处理。因为此注解被 @Component 修饰，所以会自动加入容器。
 
+由于 @ExceptionHandler 返回的是自定的 json 格式 R 对象，所以此类/方法亦需要使用 @ResponseBody 声明返回为 json。
 
+SpringMVC 提供了一个合成注解 **@RestControllerAdvice**
 
+#### 最终的异常处理
 
+一旦出现异常，**前端关心**的是不同的状态码，其需要根据不同的状态码做不同响应，如控制页面跳转等。
 
+**后端关心**正确的业务流程，因为关心错误则需要无限的判断来完成，而关心正确的业务流程则只有一条链路可走。
 
+所以**异常处理的最佳实践**是：
 
+1. 后端只编写正确的业务逻辑。如果执行期间出现问题，如参数不正确等，后端可以通过抛异常的方式提前中断业务逻辑，让前端感知异常。
 
+2. 在中断业务的时候，必须让上层及以上的链路知道中断原因。推荐抛出**业务异常**，以和其他异常做区分。
 
+   允许使用业务异常枚举来构造业务异常对象抛出。
+
+   ```java
+   package exception;
+   public class BizException extends RuntimeException {
+       private Integer code;
+       private String message;
+   
+       public BizException(Integer code, String message) {
+           this.code = code;
+           this.message = message;
+       }
+   
+       public BizException(BizExceptionEnum exceptionEnum) {
+           this.code = exceptionEnum.getCode();
+           this.message = exceptionEnum.getMessage();
+       }
+   }
+   ```
+
+3. 大型系统可能会出现海量的异常情况，所以需要固化异常处理文档，保证 code 和 message 一一对照。
+
+   推荐使用**枚举**进行有限可能列举。
+
+   ```java
+   package exception;
+   public enum BizExceptionEnum {
+       ORDER_CLOSED(10001, "订单已关闭"),
+       ORDER_EXIST(10002, "订单已存在");
+     
+       @Getter
+       private Integer code;
+       @Getter
+       private String message;
+   
+       private BizExceptionEnum(Integer code, String message) {
+           this.code = code;
+           this.message = message;
+       }
+   }
+   ```
+
+4. 封装好业务异常及其枚举之后，就可以在全局异常处理类中写一个异常的处理器，并通过传入的 BizException 来获得 code & message 传回前端。
+
+   ```java
+   @ExceptionHandler(value = BizException.class)
+   public R bizException(BizException e) {
+       return R.error(e.getCode(), e.getMessage());
+   }
+   ```
+
+#### 总结
+
+在业务逻辑运行的过程中，只要发生异常，则直接抛出业务异常，中断业务逻辑。
+
+抛出异常后由全局异常处理器接收并返回 code 和 message 给前端。
+
+至此业务异常处理的链路被打通。
 
 
 
