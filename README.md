@@ -16,6 +16,10 @@ Using both English and Mandarin to write.
 
 [Spring MVC](./pages/SpringMVC/SpringMVC.md)
 
+## Mybatis
+
+[Mybatis](./pages/Mybatis/Mybatis.md)
+
 ## Others
 
 [about OINP](./pages/Others/OINP.md)
