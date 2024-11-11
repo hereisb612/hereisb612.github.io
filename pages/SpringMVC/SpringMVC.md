@@ -1064,15 +1064,175 @@ SpringMVC 提供了一个合成注解 **@RestControllerAdvice**
 
 至此业务异常处理的链路被打通。
 
+### 数据校验
 
+JSR 303 是 Java 为 Bean 数据合法性校验提供的标准框架。通过**在 Bean 属性上**标注 @NotNull、@Max 等标准注解指定校验规则。
 
+#### 使用流程
 
+1. **引入校验依赖 spring-boot-starter-validation**
 
+2. **定义封装数据的 Java bean**
 
+3. **给 bean 的字段标注注解，并指定校验错误的提示信息**
 
+   ```java
+   @Data
+   public class Employee {
+       private Long id;
+       
+       @NotBlank(message = "姓名不为空")
+       private String name;
+       
+       @NotNull(message = "年龄不能为空")
+       @Max(value = 150, message = "年龄不能超过 150")
+       @Min(value = 0, message = "年龄不能小于 0")
+       private Integer age;
+       
+       @Email(message = "邮箱格式不正确")
+       private String email;
+       
+       private String gender;
+       private String address;
+       private BigDecimal salary;
+   }
+   ```
 
+4. **使用 @Valid、@Validated 开启校验**
 
+   ```java
+   @PostMapping("/employee")
+   public R add(@RequestBody @Valid Employee employee) {
+       employeeService.saveEmployee(employee);
+       return R.ok();
+   }
+   ```
 
+5. 使用 **BingdingResult** 封装校验结果。如果有错，则从 BindingResult 中获得所有出错的属性及其相关信息，并按封装好的 json R 格式返回给前端。
+
+   ```java
+   @PostMapping("/employee")
+   public R add(@RequestBody @Valid Employee employee, BindingResult bindingResult) {
+       if (!bindingResult.hasErrors()) {
+           employeeService.saveEmployee(employee);
+           return R.ok();
+       }
+   
+       Map<String, String> errorsMap = new HashMap<>();
+   
+       for (FieldError fieldError : bindingResult.getFieldErrors()) {
+           String field = fieldError.getField();
+           String message = fieldError.getDefaultMessage();
+           errorsMap.put(field, message);
+       }
+   
+       return R.error(500, "校验失败", errorsMap);
+   }
+   ```
+
+6. 结合**全局异常处理**，统一处理数据校验错误【推荐】
+
+   在上述写法中，不同的校验均需要写重复代码。所以可以使用 全局异常处理 抽取出重复代码进行复用。
+
+   经接收 Throwable 的全局异常处理器 e.getClass() 发现，校验失败时实际抛出的异常为 MethodArgumentNotValidException，so 抽取。
+
+   ```java
+   @ExceptionHandler(MethodArgumentNotValidException.class)
+   public R methodArgumentNotValidException(MethodArgumentNotValidException e) {
+       BindingResult bindingResult = e.getBindingResult();
+   
+       Map<String, String> errorMap = new HashMap<>();
+       for (FieldError fieldError : bindingResult.getFieldErrors()) {
+           errorMap.put(fieldError.getField(), fieldError.getDefaultMessage());
+       }
+   
+       return R.error(500, "数据校验异常", errorMap);
+   }
+   ```
+
+Optional：
+
+1. 使用 **自定义校验注解 + 校验器（implements ConstraintValidator）**完成字段自定义校验规则
+
+   如果想给 gender 添加二元性别 only 的校验，可以使用正则，也可以自定义校验注解，并完成校验器的书写。
+
+   注解书写照抄 @NotNull，其中由 @Constraint(validatedBy = {}) 指定的 class 来完成真正的校验功能
+
+   ```java
+   @Target(ElementType.FIELD)
+   @Retention(RetentionPolicy.RUNTIME)
+   @Documented
+   @Constraint(validatedBy = {GenderValidator.class})
+   public @interface Gender {
+       String message() default "{jakarta.validation.constraints.NotNull.message}";
+       Class<?>[] groups() default {};
+       Class<? extends Payload>[] payload() default {};
+   }
+   ```
+
+   随后完成校验器的规则编写
+
+   ```java
+   public class GenderValidator implements ConstraintValidator<Gender, String> {
+       @Override
+       public boolean isValid(String value, ConstraintValidatorContext constraintValidatorContext) {
+           return "male".equals(value) || "female".equals(value);
+       }
+   }
+   ```
+
+2. 结合校验注解 message 属性与 i18n 文件，实现错误消息的国际化。
+
+   1. 使用占位符来填充错误消息的位置
+
+      ```java
+      @Gender(message = "{gender.message}")
+      private String gender;
+      ```
+
+   2. new properties file named as `messages.properties`  in resource to map {gender.message}, and this file name is default in Spring and if wanna config it need to change spring.messages.basename = `filename` in application.properties
+
+   3. In messages file, write gender.message = xx to replace {gender.message}
+
+   4. if have multiple languages support, can set files name as ``messages_en_US.properties`` or ```messages_zh_CN.properties```
+
+   5. Then, i18n works. If wanna test other language environment, can change it in HTTP request head. It is automatically.
+
+### different O
+
+Pojo: java bean, basic java class
+
+Dao: database access object
+
+TO: transfer object
+
+VO: view/value object, used to encapsulation front-end object，给前端的查询返回数据的时候很可能要进行脱敏，如 password 等内容，所以专门有一个脱敏后的 java bean 对象更方便。
+
+#### Vo
+
+> 解决了不同层之间共享同一个数据封装对象的情况。
+>
+> 通常来说，POJO 是依照数据库设计的，用于数据库操作的封装对象，应当和前端版本隔离。
+
+1. have 2 packages, vo.req, vp.resp
+
+2. 不同的操作封装不同的 pojo
+
+3. 对应的 controller 使用对应的 pojo。可以解决脱敏、并解决校验规则在不同 restful api 下冲突的问题。
+
+   ```java
+   @PostMapping("/employee")
+   public R add(@RequestBody @Valid EmployeeAddVo vo){
+       Employee employee = new Employee();
+       BeanUtils.copyProperties(vo, employee);
+       employeeService.saveEmployee(employee);
+       return R.ok();
+   }
+   ```
+
+   Spring provides **`BeanUtils.copyProperties()`** , can transfer vo to pojo designed for database
+
+### 接口文档
 
 
 
