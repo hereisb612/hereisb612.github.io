@@ -1,5 +1,13 @@
 # Mybatis[^1]
 
+## Mybatis VS JDBC
+
+在 jdbc 的情况下，dao 需要准备接口和实现类。但在 Mybatis 中，只需要准备接口和接口的映射文件，省略了实现类的过程。
+
+映射文件需要准备在 resources 目录下，可以通过 **mybatisx** 插件自动完成配置文件的生成。
+
+
+
 ## Mybatis Hello World 
 
 1. add basic dependencies from spring boot starter
@@ -41,12 +49,6 @@
    ```
 
 7. open `mybatis.configuration.map-underscore-to-camel-case=true`
-
-### Mybatis VS JDBC
-
-在 jdbc 的情况下，dao 需要准备接口和实现类。但在 Mybatis 中，只需要准备接口和接口的映射文件，省略了实现类的过程。
-
-映射文件需要准备在 resources 目录下，可以通过 **mybatisx** 插件自动完成配置文件的生成。
 
 ### basic Operation
 
@@ -106,7 +108,9 @@ in this case, id indicates the method in the interface, resultType means the typ
 </delete>
 ```
 
-### open Logging
+
+
+## open Logging
 
 if wanna see sql statement in terminal, can set in application.properties
 
@@ -124,7 +128,9 @@ In this case, log info above debug level from com.forty2.training.mybatis.hellow
 2024-11-12T16:26:43.290+08:00 DEBUG 27702 --- [mybatis-01-helloworld] [           main] c.f.t.m.h.m.EmpMapper.deleteEmpById      : <==    Updates: 0
 ```
 
-### 自增 id 回填
+
+
+## 自增 id 回填
 
 ```xml
 <!-- void addEmp(Emp emp); -->
@@ -155,15 +161,56 @@ output: 5
 
 
 
+## 参数传递
+
+### #{}
+
+底层使用 preparedStatement 完成，先生成占位符，后填充。无注入风险。
+
+```
+Preparing: select * from t_emp where id = ?
+Parameters: 1(Integer)
+Total: 1
+```
+
+### ${}
+
+底层使用字符串直接拼接成 sql 语句，有注入风险
+
+``````
+Preparing: select * from t_emp where id = 1
+Parameters: 
+Total: 1
+``````
 
 
 
+## 最佳实践
+
+为每一个接口中的形参使用 @Param 指定别名，此别名将供 xml 中 #{别名} 使用。
+
+```java
+getEmployee(@Param("id") int id, @Param("name") String name);
+```
+
+xml 中映射为 #{id}，此处 id 取自 @Param 的参数。
 
 
 
+## 表名拼接
+
+```xml
+<!-- Emp getEmpByIdWithTableName(Integer id, String tableName); -->
+<select id="getEmpByIdWithTableName" resultType="com.forty2.training.mybatis.helloworld.pojo.Emp">
+    select * from #{tableName} where id = #{id}
+</select>
+```
+
+此种方法无法将表名使用 preparedStatement 填充，**表名位置需要使用 ${} 拼接**。
 
 
 
+## 结果封装
 
 
 
