@@ -268,7 +268,7 @@ public void test7() {
 
 
 
-## ResultMap
+## *ResultMap
 
 ### 场景
 
@@ -438,6 +438,8 @@ Pojo 属性和数据库中的字段无法对应时，封装为 null
 
 ##### 自动分步查询
 
+###### column 单值
+
 ```java
 Customer getCustomerByIdAndOrderStep(Long id);
 ```
@@ -465,20 +467,73 @@ Customer getCustomerByIdAndOrderStep(Long id);
 
 当 collection 有 select 参数时，means 封装 orders 属性时，该属性应当是一个集合。但这个集合需要用另一个 sql 方法来查询，另一个 sql 的返回值作为该集合的值。
 
-collection 下的参数分别为：
+**collection 的参数**分别为：
 
 1. property 用于对应 Customer 的属性；
 2. ofType 指明集合的元素类型；
 3. select 指明第二步自动查询时调用哪个方法。在方法执行完成时，会自动把结果封装进 collection 对应的 property 中。
 4. column 用于传参，其内容的含义是 将第一次查询结果中的哪一列 作为参数 传递给第二次查询。
 
+*output*:
+
+```bash
+==>    Preparing: select * from t_customer where id = ?
+==>    Parameters: 1(Long)
+====>  Preparing: select * from t_order where customer_id = ?
+====>  Parameters: 1(Long)
+<====  Total: 2
+<==    Total: 1
+
+Customer(id=1, customerName=张三, phone=13100000000, orders=[Order(id=1, address=西安市雁塔区, amount=99.98, customerId=1, customer=null), Order(id=2, address=北京市, amount=199.00, customerId=1, customer=null)])
+```
+
+###### column 多值
+
+```java
+List<Order> getOrdersByCustomerId(@Param("cid") Long customerId, @Param("name_") String name);
+```
+
+```xml
+column="{cid=id, name_=customer_name}"
+```
+
+前为 param 指定的别名，后为第一次查询时返回的查询结果的列名。
+
+###### 超级分步天坑
+
+超级分步（多次分步）是，**务必保证最后一次方法的调用为 resultType 的**，来暂停 select 之间的循环调用。否则将会 StackOverFlow。
+
+因为如触发循环调用，resultMap 会再调用其中的 collection 中的 select，而 select 中的 collection 又会调用下一次。
+
+而使用 resultType 会按照默认规则封装，不会再存在 resultMap 中的 collection，自然也就不会再存在分步查询，所以令超级分步的最后一步为 resultType 则安全。
+
+#### 延迟加载
+
+假设 customer 中有 customer info & order info。
+
+在延迟加载**未开启**时，即使操作只用了分步查询第一步中的 customer info such as customer_id，处于分步查询第二步的 order info 依旧会被自动执行，按照 resultMap 的规则封装进 customer，但其实功能中根本用不到 order info，第二步查询在这个 case 中是冗余的。
+
+所以延迟加载（kind of 懒加载）出现了。
+
+在延迟加载**开启**的情况下，如果程序中没有访问位于分步查询第二步的 order info，那么分步查询的第二步就暂时不会被执行（类似于挂起），直到 order info 相关的内容被访问时，分步查询的第二步才会开始执行。
+
+##### 全局配置
+
+在 application.properties 中有两条和 [mybatis 延迟加载相关的配置信息](https://mybatis.org/mybatis-3/configuration.html)
+
+```properties
+mybatis.configuration.lazy-loading-enabled=true
+mybatis.configuration.aggressive-lazy-loading=false
+```
+
+| Setting               | Description                                                  | Valid Values  | Default                |
+| --------------------- | ------------------------------------------------------------ | ------------- | ---------------------- |
+| lazyLoadingEnabled    | Globally enables or disables lazy loading. **When enabled, all relations will be lazily loaded.** This value can be superseded for a specific relation by using the `fetchType` attribute on it. | true or false | false                  |
+| aggressiveLazyLoading | **When enabled, any method call will load all the lazy properties of the object.** Otherwise, each property is loaded on demand (see also `lazyLoadTriggerMethods`). | true or false | false (true in ≤3.4.1) |
 
 
 
-
-
-
-
+## *动态 Sql
 
 
 
