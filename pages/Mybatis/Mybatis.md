@@ -384,9 +384,93 @@ Pojo 属性和数据库中的字段无法对应时，封装为 null
 
 ### 分步查询
 
+在 association 和 collection 封装过程中，可以使用 select + column 指定分步查询逻辑
 
+- select 指定分步查询调用的方法
+- column 指定分步查询传递的参数
+  - 传递单个：直接写列名，表示将这列的值作为参数传递给下一个查询
+  - 传递多个：column="{prop1=col1, prop2=col2}"，下一个查询使用 prop1、prop2 取值
 
+#### 案例
 
+按照 id 查询客户 以及 他下的所有订单
+
+##### 原生写法
+
+1. 分别查询客户信息、该客户 id 下的订单信息
+
+   ```java
+   @Mapper
+   public interface OrderCustomerStepMapper {
+       Customer getCustomerById(Long id);
+   
+       List<Order> getOrdersByCustomerId(Long customerId);
+   }
+   ```
+
+   ```xml
+   <select id="getCustomerById" resultType="com.forty2.training.mybatis.helloworld.pojo.Customer">
+       select *
+       from t_customer
+       where id = #{id}
+   </select>
+   
+   <select id="getOrdersByCustomerId" resultType="com.forty2.training.mybatis.helloworld.pojo.Order">
+       select *
+       from t_order
+       where customer_id = #{customerId}
+   </select>
+   ```
+
+2. 获得客户信息、该客户的所有订单，在 test 或 service 中手动封装
+
+   ```java
+   @Test
+   public void test1() {
+       Customer customer = orderCustomerStepMapper.getCustomerById(1L);
+       List<Order> orders = orderCustomerStepMapper.getOrdersByCustomerId(customer.getId());
+       customer.setOrders(orders);
+       System.out.println(customer);
+   }
+   ```
+
+此处可见，是我们手动调用两次方法完成的。Mybatis 支持利用自动分布查询机制，将手动调用变为自动调用。
+
+##### 自动分步查询
+
+```java
+Customer getCustomerByIdAndOrderStep(Long id);
+```
+
+```xml
+  <resultMap id="CustomerOrderStepRM" type="com.forty2.training.mybatis.helloworld.pojo.Customer">
+      <id column="id" property="id"/>
+      <result column="customer_name" property="customerName"/>
+      <result column="phone" property="phone"/>
+      <collection property="orders"
+                  ofType="com.forty2.training.mybatis.helloworld.pojo.Order" select="com.forty2.training.mybatis.helloworld.mapper.OrderCustomerStepMapper.getOrdersByCustomerId" column="id"
+      >
+        
+      </collection>
+  </resultMap>
+
+  <select id="getCustomerByIdAndOrderStep" resultMap="CustomerOrderStepRM">
+      select *
+      from t_customer
+      where id = #{id}
+  </select>
+```
+
+因为 Customer 中有 List orders，所以直接 select * 即可，自动分步查询可将第二步查回的 order 数组封装给 Customer 中的 List。
+
+当 collection 有 select 参数时，means 封装 orders 属性时，该属性应当是一个集合。但这个集合需要用另一个 sql 方法来查询，另一个 sql 的返回值作为该集合的值。
+
+collection 下的参数分别为：
+
+1. property 用于对应 Customer 的属性；
+2. ofType 指明集合的元素类型；
+3. select 指明第二步自动查询时调用哪个方法。在方法执行完成时，会自动把结果封装进 collection 对应的 property 中。
+4. column 用于传参，其内容的含义是 将第一次查询结果中的哪一列 作为参数 传递给第二次查询。
 
 
 
