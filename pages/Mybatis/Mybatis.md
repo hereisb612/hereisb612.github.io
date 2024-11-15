@@ -185,7 +185,7 @@ Total: 1
 
 
 
-## 最佳实践
+### 最佳实践
 
 为每一个接口中的形参使用 @Param 指定别名，此别名将供 xml 中 #{别名} 使用。
 
@@ -212,21 +212,177 @@ xml 中映射为 #{id}，此处 id 取自 @Param 的参数。
 
 ## 结果封装
 
+> 返回对象或普通类型：resultType = 全类名
+>
+> 返回集合：resultType = 集合中元素的全类名
+
+### Basic
+
+List、基本数据类型、pojo 等用**全类名**书写。基本数据类型 Mybatis 提供了简化版。
+
+### Map
+
+**Map 的 resultType 依旧是集合内元素对象的全类名**，key 可以通过 @MapKey("") 指定。
+
+#### 错误
+
+如果如下写，resultType="java.util.Map"，虽然能成功获取到 Emp 对象，但在获取 class 时会发现是 HashMap。
+
+```xml
+<!-- @MapKey("id")
+     Map<Integer, Emp> getAllEmpsMap(); -->
+<select id="getAllEmpsMap" resultType="java.util.Map">
+    select * from t_emp
+</select>
+```
+
+```java
+@Test
+public void test7() {
+    Map<Integer, Emp> allEmpsMap = empMapper.getAllEmpsMap();
+    System.out.println(allEmpsMap.get(2).getClass());
+}
+```
+
+output: java.lang.ClassCastException: class **java.util.HashMap** cannot be cast to class com.forty2.training.mybatis.helloworld.pojo.Emp 
+
+#### 正确
+
+所以正确的写法是，即使返回值是装进 **Map 里**，依旧使用集合内**元素的类型作为 resultType**，并使用 @MapKey 指定 k 值，Mybatis 自动填充 v 值。
+
+```java
+<!-- @MapKey("id")
+     Map<Integer, Emp> getAllEmpsMap(); -->
+<select id="getAllEmpsMap" resultType="com.forty2.training.mybatis.helloworld.pojo.Emp">
+    select * from t_emp
+</select>
+```
+
+```java
+@Test
+public void test7() {
+    Map<Integer, Emp> allEmpsMap = empMapper.getAllEmpsMap();
+    System.out.println(allEmpsMap.get(2).getClass());
+}
+```
 
 
 
+## ResultMap
+
+### 场景
+
+Pojo 属性和数据库中的字段无法对应时，封装为 null
+
+解决方法：
+
+1. 在 sql 中使用别名
+2. 使用驼峰命名的映射
+3. 使用 ResultMap（自定义结果集）
+
+### 使用
+
+定义 resultMap。第一个 id 用于映射，type 为管理的 pojo 的类型。第二个 id 声明主键的映射规则，result 声明数据库中列与 pojo 的属性的映射规则。
+
+而后在 select 标签的 resultMap 处完成 id 映射即可。
+
+```java
+<resultMap id="EmpRM" type="com.forty2.training.mybatis.helloworld.pojo.Emp">
+    <id column="id" property="id"/>
+    <result column="emp_name" property="empName"/>
+    <result column="age" property="age"/>
+    <result column="emp_salary" property="empSalary"/>
+</resultMap>
+
+<select id="getEmpById" resultMap="EmpRM">
+    select *
+    from t_emp
+    where id = #{id}
+</select>
+```
+
+### 最佳实践
+
+1. 开启驼峰命名
+2. 对于驼峰命名搞不定的复杂关系，用 resultMap 来完成自定义映射
 
 
 
+## 关联查询
 
+### association 一对一
 
+指定自定义对象的封装规则。一般用于联合查询中**一对一关系**的封装，比如一个订单只能对应一个客户。
 
+每行 new 一个新对象映射好返回。
 
+- javaType 指定关联的 bean 的类型
+- select 指定分步查询调用的方法
+- 指定分步查询传递的参数列
 
+#### 案例
 
+按照 id 查询订单及下单的客户信息。一对一关系。
 
+1. 向其中一方加入另一方的主键。如，给 order 中加入属性 customerId。
 
+2. 定义 resultMap 的映射规则，将另一个对象的属性和 sql 中返回的某些列映射。其中，用 association 标签嵌套映射主 pojo 中的对象，property 为对应的属性名，javaType 说明类型，供反射使用。反射会调用空参构造器，然后按照子标签一一赋值。
 
+   ```xml
+   <resultMap id="OrderRM" type="com.forty2.training.mybatis.helloworld.pojo.Order">
+       <id column="id" property="id"/>
+       <result column="address" property="address"/>
+       <result column="amount" property="amount"/>
+       <result column="customer_id" property="customerId"/>
+       <association property="customer" javaType="com.forty2.training.mybatis.helloworld.pojo.Customer">
+           <id column="c_id" property="id"/>
+           <result column="customer_name" property="customerName"/>
+           <result column="phone" property="phone"/>
+       </association>
+   </resultMap>
+   ```
+
+### Collection 一对多
+
+指定自定义对象的封装规则。一般用于联合查询中**一对多关系**的封装，比如一个用户对应着多个订单。
+
+数据库的查询结果可能有很多行，但前面的 customer 信息都是相同的，区别只是后面不同的 order。所以 Mybatis 在查到第二行时，就不会再创建新的 customer 对象装结果，而是在发现 collection 标签之后，自动把接下来每行里的 order 信息 new 新对象封装好，依次放进 List orders 里。这就是 collection 标签的意义。
+
+- ofType 指定集合中 bean 的类型
+
+#### 案例
+
+按照 id 查询客服以及客户下单的所有信息。一对多关系，一个客户可能有很多订单。
+
+1. 向客户中添加一个 List 用于存放所有 Order。
+
+2. 定义 resultMap，使用 Collection。
+
+   ```xml
+   <resultMap id="CusRM" type="com.forty2.training.mybatis.helloworld.pojo.Customer">
+       <id column="c_id" property="id"/>
+       <result column="customer_name" property="customerName"/>
+       <result column="phone" property="phone"/>
+       <collection property="orders" ofType="com.forty2.training.mybatis.helloworld.pojo.Order">
+           <id column="id" property="id"/>
+           <result column="address" property="address"/>
+           <result column="amount" property="amount"/>
+           <result column="customer_id" property="customerId"/>
+       </collection>
+   </resultMap>
+   
+   <select id="getCustomerByIdWithOrders" resultMap="CusRM">
+       select c.id c_id,
+              c.customer_name,
+              c.phone,
+              o.*
+       from t_customer c
+                left join t_order o on c.id = o.customer_id
+       where c.id = #{id}
+   </select>
+   ```
+
+### 分步查询
 
 
 
