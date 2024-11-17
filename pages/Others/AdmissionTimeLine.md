@@ -42,6 +42,8 @@ under evaluation:		       2024-11-14
 
 submit:					 2024-11-15
 
+evaluation in progress:	      2024-11-17
+
 
 
 ### LakeHead
@@ -49,6 +51,8 @@ submit:					 2024-11-15
 #### CS
 
 submit:					 2024-11-15
+
+under initial review:		   2024-11-17
 
 
 

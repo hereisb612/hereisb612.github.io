@@ -535,13 +535,81 @@ mybatis.configuration.aggressive-lazy-loading=false
 
 ## *动态 Sql
 
+### if & where
 
+> 查询员工信息，按照员工名、薪资或员工名薪资来查询。
 
+在原生写法下，需要使用三个方法，其中之一 eg like。name 或 salary 任意为空都会导致该 sql 缺少某字段而失效。
 
+```xml
+<!--Emp selectEmpByEmpNameAndSalary(@Param("name") String name, @Param("salary") BigDecimal salary);-->
+<select id="selectEmpByEmpNameAndSalary" resultType="com.forty2.training.mybatis.helloworld.pojo.Emp">
+    select *
+    from t_emp
+    where emp_name = #{name}
+      and emp_salary = #{salary}
+</select>
+```
 
+为了解决代码的可复用性，引入了动态 sql。本案例可写为：
 
+```xml
+<!--Emp selectEmpByEmpNameAndSalary(@Param("name") String name, @Param("salary") BigDecimal salary);-->
+<select id="selectEmpByEmpNameAndSalary" resultType="com.forty2.training.mybatis.helloworld.pojo.Emp">
+    select *
+    from t_emp
+    <where>
+        <if test="name!=null">
+            and emp_name = #{name}
+        </if>
+        <if test="salary != null">
+            and emp_salary = #{salary}
+        </if>
+    </where>
+</select>
+```
 
+使用 if 标签，来把符合 test 条件的 sql 条件拼装进最后的 sql 语句里。
 
+where 标签能够根据 有没有 if 生效，决定 where 是否出现，同时可以消除 where 标签中多余的 and 和 or。
+
+### if & set
+
+> 更新员工
+
+本案例中，原生写法如下。本写法导致的问题是，如果传入的 Emp pojo 中的某些值未使用 setter 赋值，为 null，则数据库中的也会被修改为 null。但现实情况是，大部分需要使用 update 的场景，往往 pojo 中只会 set 主键和需要被修改的值。使用原生方法需要将不变的值也赋值，繁琐，故引入动态 sql。
+
+```xml
+<!--void updateEmp(Emp emp);-->
+<update id="updateEmp">
+    update t_emp
+    set emp_name   = #{empName},
+        age        = #{age},
+        emp_salary = #{empSalary}
+    where id = #{id}
+</update>
+```
+
+与上例原理相同，可写为如下。if 判断是否拼接进 sql，set 决定自身是否出现，及处理其中的语法问题，如多逗号等
+
+```xml
+<!--void updateEmp(Emp emp);-->
+<update id="updateEmp">
+    update t_emp
+    <set>
+        <if test="empName != null">
+            emp_name = #{empName},
+        </if>
+        <if test="age!=null">
+            age = #{age},
+        </if>
+        <if test="empSalary!=null">
+            emp_salary = #{empSalary},
+        </if>
+    </set>
+    where id = #{id}
+</update>
+```
 
 
 
