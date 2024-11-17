@@ -611,7 +611,90 @@ where 标签能够根据 有没有 if 生效，决定 where 是否出现，同�
 </update>
 ```
 
+### choose.. when.. otherwise
 
+本质上，choose when otherwise 就是一个自带 break 的 switch case。
+
+choose 是 switch，when 是 case 和条件，执行后自动 break，otherwise 是 default。
+
+```xml
+<!--Emp queryEmpByNameAndSalaryWhen(@Param("name") String name, @Param("salary") BigDecimal salary);-->
+<select id="queryEmpByNameAndSalaryWhen">
+    select * from t_emp
+    <where>
+        <choose>
+            <when test="name != null">
+                emp_name = #{name}
+            </when>
+            <when test="salary > 3000">
+                emp_salary = #{salary}
+            </when>
+            <otherwise>
+                id = 1
+            </otherwise>
+        </choose>
+    </where>
+</select>
+```
+
+### for each
+
+用来遍历、循环。常用于批量插入场景及批量执行单个 sql。
+
+> 查询指定 id 集合中的员工
+
+sql 的原生写法为
+
+```sql
+select * from t_emp where id IN (1,3,5,7)
+```
+
+似乎 mybatis 中应当写为如下代码。但如何确定 List  ids 集合的长度一定为 4 呢？如果长度不同就不适用？于是提供了 for each 的 dynamic sql from mybatis
+
+```xml
+<!--List<Emp> queryEmpsByIds(@Param("ids") List<Integer> ids);-->
+<select id="queryEmpsByIds" resultType="com.forty2.training.mybatis.helloworld.pojo.Emp">
+    select *
+    from t_emp
+    where id IN (#{ids[0]}, #{ids[1]}, #{ids[2]}, #{ids[3]})
+</select>
+```
+
+dynamic sql like
+
+```xml
+<!--List<Emp> queryEmpsByIds(@Param("ids") List<Integer> ids);-->
+<select id="queryEmpsByIds" resultType="com.forty2.training.mybatis.helloworld.pojo.Emp">
+    select *
+    from t_emp
+    where id IN (
+    <foreach collection="ids" item="id" separator=",">
+        #{id}
+    </foreach>
+    )
+</select>
+```
+
+**foreach** 标签能用来遍历 List Map 数组等各种集合。
+
+其中 **collection** 用于绑定形参位置的集合，**item** 等于对每个集合元素称呼，same as `for(Integer id : ids)` /  `for(Object item : collection)` 这种增强 for 的写法。
+
+在 foreach 中，直接写 #{item} 即可。这样就能实现类似 `select * from t where id in(item, item ...)` 的形式。
+
+由于 in 中每个元素都需要以逗号分隔，所以可以使用 **separator** 属性来指定分隔符。
+
+还有两个隐藏属性，分别是 **open** 和 **close**，用于指定 foreach 的前缀后缀。使用这两个属性可以简化可读性和行数为：
+
+```xml
+<!--List<Emp> queryEmpsByIds(@Param("ids") List<Integer> ids);-->
+<select id="queryEmpsByIds" resultType="com.forty2.training.mybatis.helloworld.pojo.Emp">
+    select *
+    from t_emp
+    <foreach collection="ids" item="id" separator="," open="where id IN (" close=")">
+        #{id}
+    </foreach>
+</select>
+```
 
 
 
