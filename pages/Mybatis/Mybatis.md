@@ -641,7 +641,7 @@ choose 是 switch，when 是 case 和条件，执行后自动 break，otherwise 
 
 用来遍历、循环。常用于批量插入场景及批量执行单个 sql。
 
-> 查询指定 id 集合中的员工
+> 批量查询：查询指定 id 集合中的员工
 
 sql 的原生写法为
 
@@ -683,7 +683,7 @@ dynamic sql like
 
 由于 in 中每个元素都需要以逗号分隔，所以可以使用 **separator** 属性来指定分隔符。
 
-还有两个隐藏属性，分别是 **open** 和 **close**，用于指定 foreach 的前缀后缀。使用这两个属性可以简化可读性和行数为：
+还有两个隐藏属性，分别是 **open** 和 **close**，用于指定 foreach 的前缀后缀。使用这两个属性可以简化可读性和行数为下。同时，当使用 open + close 将 `where id IN ()` 装入时，不开始遍历则这些内容不会出现，更合理。
 
 ```xml
 <!--List<Emp> queryEmpsByIds(@Param("ids") List<Integer> ids);-->
@@ -695,6 +695,48 @@ dynamic sql like
     </foreach>
 </select>
 ```
+
+此外，如果 collection 为空，将报错。所以将 foreach 放入 if 中，判断一下集合是否为空，不为空才进入 foreach 更合理。此处代码省略不表。
+
+> 批量插入：批量插入集合中的员工
+
+动态 sql 的批量添加如下：
+
+```xml
+<!--void insertEmps(@Param("emps") List<Emp> emps);-->
+<insert id="insertEmps">
+    insert into t_emp(emp_name, age, emp_salary)
+    <if test="emps!=null">
+        <foreach collection="emps" item="emp" separator="," open="values">
+            (#{emp.empName},#{emp.age},#{emp.empSalary})
+        </foreach>
+    </if>
+</insert>
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
