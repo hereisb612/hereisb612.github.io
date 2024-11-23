@@ -44,6 +44,8 @@ submit:					 2024-11-15
 
 evaluation in progress:	      2024-11-17
 
+conditional acceptance:	     2024-11-21
+
 
 
 ### LakeHead

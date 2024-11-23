@@ -110,7 +110,7 @@ in this case, id indicates the method in the interface, resultType means the typ
 
 
 
-## open Logging
+## open Logging 日志
 
 if wanna see sql statement in terminal, can set in application.properties
 
@@ -268,7 +268,7 @@ public void test7() {
 
 
 
-## *ResultMap
+## ResultMap
 
 ### 场景
 
@@ -533,7 +533,7 @@ mybatis.configuration.aggressive-lazy-loading=false
 
 
 
-## *动态 Sql
+## 动态 Sql
 
 ### if & where
 
@@ -641,7 +641,9 @@ choose 是 switch，when 是 case 和条件，执行后自动 break，otherwise 
 
 用来遍历、循环。常用于批量插入场景及批量执行单个 sql。
 
-> 批量查询：查询指定 id 集合中的员工
+#### 批量查询
+
+> 查询指定 id 集合中的员工
 
 sql 的原生写法为
 
@@ -698,7 +700,9 @@ dynamic sql like
 
 此外，如果 collection 为空，将报错。所以将 foreach 放入 if 中，判断一下集合是否为空，不为空才进入 foreach 更合理。此处代码省略不表。
 
-> 批量插入：批量插入集合中的员工
+#### 批量插入
+
+> 批量插入集合中的员工
 
 动态 sql 的批量添加如下：
 
@@ -714,45 +718,134 @@ dynamic sql like
 </insert>
 ```
 
+#### 批量修改
+
+> 批量修改 id 为 xx 的员工名为 员工名+id
+
+原生 sql 为
+
+```sql
+update t_emp set emp_name = 'zhang1' where id = 1;
+update t_emp set emp_name = 'zhang2' where id = 2;
+update t_emp set emp_name = 'zhang3' where id = 3;
+```
+
+动态 sql 为
+
+```xml
+<!--void updateEmps(@Param("emps") List<Emp> emps);-->
+<update id="updateEmps">
+    <foreach collection="emps" item="emp" separator=";">
+        update t_emp
+        <set>
+            <if test="emp.empName != null">
+                emp_name = #{emp.empName},
+            </if>
+            <if test="emp.empSalary != null">
+                emp_salary = #{emp.empSalary},
+            </if>
+            <if test="emp.age != null">
+                age = #{emp.age},
+            </if>
+        </set>
+        where id = #{emp.id}
+    </foreach>
+</update>
+```
+
+sql 语法无问题但报错 org.springframework.jdbc.**BadSqlGrammarException**，原因为 数据库连接层面 不支持一条查询中包含多 sql
+
+在 application.properties 的 sql url 中开启即可。
+
+```properties
+spring.datasource.url=jdbc:mysql://localhost:3306/mybatis-example?allowMultiQueries=true
+```
+
+**在 url 后使用 ?参数** 的形式，将 **allowMultiQueries=true** 携带上。之后解决
+
+### Sql 片段
+
+可以将所有可以复用的 sql 片段抽取出来统一管理，减少冗余代码的编写，同时统一管理也更方便
+
+sql 用于抽取可复用的片段，include 用于引用可复用的片段。refid 指向 sql 片段的 id。
+
+```xml
+<sql id="names">
+    需要抽取的复用内容
+</sql>
+```
+
+```xml
+select
+	<include refid="names"/>
+```
+
+此时 select 中的 include 就会被替换成 sql 片段中的内容。
 
 
 
+## 缓存机制
+
+Mybatis 拥有两级缓存机制
+
+一级缓存默认开启，其事务级别是 **当前事务共享**
+
+二级缓存需要手动开启，其事务级别是 **所有事务共享**
 
 
 
+## 插件机制
+
+Mybatis 底层使用拦截器 interceptor 提供插件功能，在其 jar 包下的 plugins 包中可见。方便用户在 sql 执行前后进行拦截、增强。
+
+拦截器可以拦截 **四大对象** 的执行：
+
+- ParameterHandler 处理 sql 的参数对象
+- ResultSetHandler 处理 sql 返回的结果集
+- StatementHandler 数据库的处理对象，用于执行 sql 语句
+- Executor Mybatis 的执行器，用于执行增删改查操作
 
 
 
+## 分页插件
+
+[PageHelper](https://pagehelper.github.io) 是可以用在 Mybatis 中的一个强大的分页插件。其就是利用 Mybatis 的插件机制，在底层编写了分页的 Interceptor，每次 sql 查询之前会自动拼装分页数据。
+
+参见[文档](https://pagehelper.github.io) 或 [视频](【尚硅谷2024雷神版SSM教程，基于AI的全新ssm框架实战-哔哩哔哩】 https://b23.tv/3qHtbCx) 使用即可。
 
 
 
+## 逆向工程
+
+Mybatisx 插件提供了逆向生成功能，可以根据数据库表一键生成常用的 crud 和 pojo。
 
 
 
+## 日志
+
+application.properties 中，logging.level.com.xx = debug
 
 
 
+## CRUD 作业
 
+### 技术栈
 
+SpringBoot + Spring + SpringMVC + Mybatis
 
+### 要求
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+1. 员工表 ✅
+2. 基本的 CRUD ✅
+3. 分页查询 ✅
+4. RESTful 风格 ✅
+5. 数据校验 ✅
+6. 全局统一异常处理（业务异常及校验异常）✅
+7. 引入 VO 分层
+8. 引入 swagger 文档
+9. 在接口文档中完成测试
+10. 解决跨域资源共享问题
+11. 前端工程化的实现
 
 
 
