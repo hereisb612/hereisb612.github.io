@@ -164,6 +164,16 @@ public class LogTest {
 }
 ```
 
+### 日志占位符
+
+log 中提供了 {} 占位符，允许在其后拼接多个参数
+
+```java
+log.info("变量:{}, msg={}", i++, "MSG")
+```
+
+*output:* 变量: 0, msg=MSG
+
 ### 日志输出格式
 
 ​	时间	级别	进程 id	---	项目名	---	线程名	---	当前类名:	日志内容
@@ -197,29 +207,84 @@ logging.group.group-name=com.package-one,com.package-two
 logging.level.group-name=debug
 ```
 
+### 日志输出
+
+SpringBoot 默认只把日志写在控制台，如果想额外记录到文件，可以在 application.properties 中添加 logging.file.name 或 logging.file.path 配置项
+
+| logging.file.name | logging.file.path | 示例     | 效果                                         |
+| ----------------- | ----------------- | -------- | -------------------------------------------- |
+|                   |                   |          | 仅控制台输出                                 |
+| 指定              |                   | my.log   | 写入当前项目下的指定文件，若不存在则自动创建 |
+|                   | 指定              | /var/log | 写入指定目录，文件名为 spring.log            |
+| 指定              | 指定              |          | 以 logging.file.name 为准                    |
+
+### 文件归档与滚动切割
+
+#### 归档
+
+每天的日志单独存到一个文档中
+
+#### 切割
+
+每个文件 10MB，超过大小切割成另一个文件
+
+### 日志最佳实践
+
+1. 日志的配置
+
+   - 日志输出到文件
+
+   - 打印的日志级别
+
+2. 在合适的时候选择合适的级别进行日志记录
+
+   - log.info()
+   - log.debug()
+   - log.error()
+   - etc..
+
+3. 不要再用 System.out.println("") in your program
 
 
 
+## 进阶使用
 
+### @Profile
 
+@Profile("dev") 注解的底层还是 @Conditional
 
+其功能是基于 **环境标识** 进行判断，当前处于什么环境就配置什么组件，或开启什么配置
 
+### SpringBoot 环境隔离
 
+1. 定义环境：dev、test、prod
 
+2. 定义这个环境下哪些组件和配置生效
 
+   1. 生效哪些组件：给组件 @Profile("environmentVariable")
 
+   2. 生效哪些配置：application-环境标识.properties
 
+      eg: application-dev.properties & application-test.properties
 
+      不提环境的则为主配置文件。
 
+      主配置文件在任何环境都生效。
 
+      **激活的配置优先级高于默认配置**。
 
+3. 激活环境，相应的组件和配置就会生效
 
+   - application.properties 中使用 spring.profiles.active=dev 来激活对应环境
+   - 命令行：`java -jar name.jar --spring.profiles.active=dev` 来激活
 
+### 包含配置
 
+可以抽取通用的配置（如属性文件等），使用 profiles.include 可以引用
 
+### 生效配置
 
-
-
+生效的配置 = 默认配置 + 激活的配置( profiles.active ) + 包含的配置( profiles.include)
 
 
 
