@@ -358,65 +358,21 @@ public class UnitTest {
 
 
 
+## 可观测性
 
+可观测性指向外暴露的各类性能指标的暴露情况。
 
+SpringBoot 提供了 actuator 模块，该模块可以快速暴露项目的所有指标。
 
+导入 spring-boot-starter-actuator 模块，在 application.properties 中配置暴露哪些内容，而后访问 localhost:8080/actuator 即可
 
+全部暴露：`management.endpoints.web.exposure.include=*`
 
+访问该地址获得一组 json，每个 json 中都包含路径，可通过该路径来访问相应的部分的内容
 
+通过 actuator 能访问到项目相关的几乎所有内容，这些叫做端点（Endpoints）。
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+当中包含一个叫 **metrics** 的端点，这就是所谓的 **指标信息**，其中包含了如硬盘、cpu 占用等值得关注的信息。
 
 
 
