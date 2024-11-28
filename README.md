@@ -4,7 +4,7 @@ Here are all the things about myself.
 
 Using both English and Mandarin to write.
 
-## Spring
+## SSM
 
 [Spring 容器](./pages/Spring/Spring容器.md)
 
@@ -12,11 +12,7 @@ Using both English and Mandarin to write.
 
 [Spring 事务](./pages/Spring/Spring事务.md)
 
-## SpringMVC
-
-[Spring MVC](./pages/SpringMVC/SpringMVC.md)
-
-## Mybatis
+[SpringMVC](./pages/SpringMVC/SpringMVC.md)
 
 [Mybatis](./pages/Mybatis/Mybatis.md)
 
