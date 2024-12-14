@@ -1,7 +1,5 @@
 # Admission Timeline
 
-## Submitted
-
 ### Waterloo
 
 #### ECE (non-coop)
@@ -12,11 +10,17 @@ submit: 					2024-10-17
 
 ### Western
 
-#### ECE
+#### ✅ ECE
 
 submit: 					2024-10-18
 
 preliminary assessment: 	  2024-11-01
+
+offer:		  		           2024-12-13
+
+
+
+### Western
 
 #### CS
 
@@ -34,17 +38,19 @@ submit:					 2024-10-25
 
 under evaluation:		       2024-11-14
 
+all file is complete:		      2024-11-6
+
 
 
 ### Windsor
 
-#### CS
+#### ✅ CS
 
 submit:					 2024-11-15
 
 evaluation in progress:	      2024-11-17
 
-conditional acceptance:	     2024-11-21
+offer:	   			          2024-11-21
 
 
 
@@ -55,21 +61,3 @@ conditional acceptance:	     2024-11-21
 submit:					 2024-11-15
 
 under initial review:		   2024-11-17
-
-
-
-## Waiting
-
-### CS
-
-Laurentian CS
-
-
-
-### ECE
-
-Windsor ECE
-
-LakeHead ECE
-
-Carleton ECE
