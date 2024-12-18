@@ -22,6 +22,8 @@ Using both English and Mandarin to write.
 
 ## Others
 
+[Lambda](./pages/Others/Lambda.md)
+
 [about OINP](./pages/Others/OINP.md)
 
 [Admission Timeline](./pages/Others/AdmissionTimeLine.md)
